@@ -6,7 +6,7 @@
 use std::sync::mpsc::Sender;
 
 use aegis_core::{Action, EventEnvelope, EventPayload, FileOp, Verdict};
-use aegis_detection::CanaryWatch;
+use aegis_detection::{CanaryWatch, ExecHeuristics};
 use tokio::sync::{broadcast, mpsc};
 use tracing::{debug, error, info};
 
@@ -35,6 +35,10 @@ pub async fn ingest(
             continue;
         }
         log_event(&event);
+        // Heuristiques exec (reverse shell, zone inscriptible) en plus du scan.
+        if let Some(verdict) = ExecHeuristics::evaluate(&event) {
+            enforce(&verdict);
+        }
         if let EventPayload::File(file) = &event.payload {
             if matches!(file.op, FileOp::OpenExec) {
                 let _ = scan_tx.send(ScanRequest {

@@ -57,3 +57,69 @@ impl CanaryWatch {
         }
     }
 }
+
+/// Préfixes de répertoires inscriptibles d'où une exécution est suspecte.
+const WRITABLE_EXEC_DIRS: &[&str] = &["/tmp/", "/dev/shm/", "/var/tmp/", "/run/user/"];
+
+/// Motifs de reverse shell recherchés dans la ligne de commande.
+const REVERSE_SHELL_PATTERNS: &[&str] =
+    &["/dev/tcp/", "/dev/udp/", "bash -i", "sh -i", "nc -e", "ncat -e", "mkfifo"];
+
+/// Heuristiques sur les exécutions (catégorie Execution / C2 du catalogue).
+/// S'appuient sur le flux exec fanotify + `cmdline` issu de `/proc`, sans eBPF.
+pub struct ExecHeuristics;
+
+impl ExecHeuristics {
+    /// Évalue une exécution. Reverse shell (cmdline) prime sur l'origine du binaire.
+    pub fn evaluate(event: &EventEnvelope) -> Option<Verdict> {
+        let EventPayload::File(file) = &event.payload else { return None };
+        if !matches!(file.op, FileOp::OpenExec) {
+            return None;
+        }
+        if let Some(pattern) = matched_reverse_shell(&event.process.cmdline) {
+            return Some(reverse_shell_verdict(event, pattern));
+        }
+        if is_writable_exec(&file.path) {
+            return Some(writable_exec_verdict(event, &file.path));
+        }
+        None
+    }
+}
+
+fn matched_reverse_shell(cmdline: &str) -> Option<&'static str> {
+    REVERSE_SHELL_PATTERNS.iter().copied().find(|p| cmdline.contains(p))
+}
+
+fn is_writable_exec(path: &str) -> bool {
+    WRITABLE_EXEC_DIRS.iter().any(|d| path.starts_with(d))
+}
+
+fn reverse_shell_verdict(event: &EventEnvelope, pattern: &str) -> Verdict {
+    Verdict {
+        schema_version: SCHEMA_VERSION,
+        event_id: event.event_id,
+        engine: Engine::Behavioral,
+        severity: Severity::Critical,
+        category: ThreatCategory::CommandAndControl,
+        mitre: vec!["T1059.004".to_string()],
+        confidence: 0.9,
+        title: format!("Reverse shell probable ({})", event.process.comm),
+        detail: format!("Motif « {pattern} » dans la commande : {}", event.process.cmdline),
+        recommended_action: Action::Kill { pid: event.process.pid },
+    }
+}
+
+fn writable_exec_verdict(event: &EventEnvelope, path: &str) -> Verdict {
+    Verdict {
+        schema_version: SCHEMA_VERSION,
+        event_id: event.event_id,
+        engine: Engine::Behavioral,
+        severity: Severity::High,
+        category: ThreatCategory::Execution,
+        mitre: vec!["T1059".to_string()],
+        confidence: 0.7,
+        title: format!("Exécution depuis une zone inscriptible ({})", event.process.comm),
+        detail: format!("Binaire exécuté depuis {path}"),
+        recommended_action: Action::Notify,
+    }
+}
