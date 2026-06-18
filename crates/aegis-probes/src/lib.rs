@@ -7,4 +7,4 @@ mod fanotify;
 mod proc;
 
 pub use canary::{default_zones as default_canary_zones, deploy as deploy_canaries};
-pub use fanotify::{spawn as spawn_fanotify, ProbeError};
+pub use fanotify::{default_sensitive_files, spawn as spawn_fanotify, ProbeError};

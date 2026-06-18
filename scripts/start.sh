@@ -20,7 +20,14 @@ if [[ ! -x "$BIN" ]]; then
   exit 1
 fi
 
+if [[ $EUID -ne 0 ]]; then
+  echo "⚠ Lancé sans root : les capteurs fanotify échoueront (mode dégradé)."
+  echo "  Pour la protection réelle : sudo ./scripts/start.sh — ou le service systemd"
+  echo "  (packaging/install.sh). Mode démo UI : ajoute --demo via AEGIS_ARGS."
+fi
+
 : > "$LOG_FILE"  # reset, pas d'append
-RUST_LOG="${RUST_LOG:-info}" "$BIN" >> "$LOG_FILE" 2>&1 &
+RUST_LOG="${RUST_LOG:-info}" AEGIS_RULES_DIR="${AEGIS_RULES_DIR:-$ROOT/rules}" \
+  "$BIN" ${AEGIS_ARGS:-} >> "$LOG_FILE" 2>&1 &
 echo $! > "$PID_FILE"
 echo "Aegis démarré (PID $(cat "$PID_FILE")). Logs : $LOG_FILE"

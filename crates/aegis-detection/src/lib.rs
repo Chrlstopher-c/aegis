@@ -5,7 +5,7 @@
 mod behavioral;
 mod yara;
 
-pub use behavioral::{CanaryWatch, ExecHeuristics};
+pub use behavioral::{CanaryWatch, CredentialWatch, ExecHeuristics};
 pub use yara::{YaraEngine, YaraError};
 
 use aegis_core::{EventEnvelope, Verdict};

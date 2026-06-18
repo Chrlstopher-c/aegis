@@ -5,5 +5,5 @@
 mod kill;
 mod quarantine;
 
-pub use kill::{kill_process, KillError};
+pub use kill::{isolate_process, kill_process, KillError};
 pub use quarantine::{Quarantine, QuarantineEntry, QuarantineError};

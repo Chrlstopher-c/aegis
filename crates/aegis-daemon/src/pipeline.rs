@@ -5,28 +5,35 @@
 
 use std::sync::mpsc::Sender;
 
-use aegis_core::{Action, EventEnvelope, EventPayload, FileOp, StreamMessage, Verdict};
-use aegis_detection::{CanaryWatch, ExecHeuristics};
+use aegis_core::{EventEnvelope, EventPayload, FileOp, StreamMessage};
+use aegis_detection::{CanaryWatch, CredentialWatch, ExecHeuristics};
 use tokio::sync::{broadcast, mpsc};
-use tracing::{debug, error, info};
+use tracing::{debug, info};
 
+use crate::enforce::Enforcer;
 use crate::scan::ScanRequest;
 use crate::zones::is_hot_exec;
 
 /// Draine le canal capteurs jusqu'à sa fermeture. Priorité au comportemental
-/// (canari touché → kill immédiat) ; sinon, les exécutions en zone chaude sont
-/// loggées, diffusées et envoyées au scanner. Le reste est ignoré. Événements
-/// pertinents et verdicts sont poussés sur le bus (UI).
+/// (canari touché → décision policy immédiate) ; sinon, les exécutions en zone
+/// chaude sont loggées, diffusées et envoyées au scanner. Le reste est ignoré.
 pub async fn ingest(
     mut rx: mpsc::UnboundedReceiver<EventEnvelope>,
     bus: broadcast::Sender<StreamMessage>,
     scan_tx: Sender<ScanRequest>,
     canary_watch: CanaryWatch,
+    enforcer: Enforcer,
 ) {
     while let Some(event) = rx.recv().await {
         // 1. Comportemental prioritaire : un canari modifié = ransomware certain.
         if let Some(verdict) = canary_watch.evaluate(&event) {
-            enforce(&verdict, &bus);
+            enforcer.handle(&verdict);
+            let _ = bus.send(StreamMessage::Event(event));
+            continue;
+        }
+        // 1bis. FIM credential : lecture d'un fichier sensible surveillé.
+        if let Some(verdict) = CredentialWatch::evaluate(&event) {
+            enforcer.handle(&verdict);
             let _ = bus.send(StreamMessage::Event(event));
             continue;
         }
@@ -38,7 +45,7 @@ pub async fn ingest(
         log_event(&event);
         // Heuristiques exec (reverse shell, zone inscriptible) en plus du scan.
         if let Some(verdict) = ExecHeuristics::evaluate(&event) {
-            enforce(&verdict, &bus);
+            enforcer.handle(&verdict);
         }
         if let EventPayload::File(file) = &event.payload {
             if matches!(file.op, FileOp::OpenExec) {
@@ -51,24 +58,6 @@ pub async fn ingest(
         let _ = bus.send(StreamMessage::Event(event)); // échoue sans abonné : ignoré
     }
     info!("canal d'ingestion fermé, arrêt de la boucle");
-}
-
-/// Journalise un verdict comportemental, le pousse à l'UI et applique l'action.
-fn enforce(verdict: &Verdict, bus: &broadcast::Sender<StreamMessage>) {
-    info!(
-        engine = ?verdict.engine,
-        severity = ?verdict.severity,
-        mitre = ?verdict.mitre,
-        title = %verdict.title,
-        "VERDICT"
-    );
-    let _ = bus.send(StreamMessage::Verdict(verdict.clone()));
-    if let Action::Kill { pid } = verdict.recommended_action {
-        match aegis_response::kill_process(pid) {
-            Ok(()) => info!(pid, "process neutralisé"),
-            Err(err) => error!(pid, %err, "neutralisation impossible"),
-        }
-    }
 }
 
 /// Filtre le bruit : seules les exécutions issues d'une zone inscriptible passent.

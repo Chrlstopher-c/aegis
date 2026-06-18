@@ -56,10 +56,15 @@ réponse. Chaque phase a un livrable validé avant d'enchaîner.
 - [x] Bonus : mode dégradé (daemon survit sans capteurs) + mode `--demo`
 
 ### Phase 5 — Réponse & finition
-- [ ] Réponse graduée (alerte → isolation → kill)
-- [ ] FIM léger sur fichiers critiques (déclenche YARA)
+- [x] Réponse graduée (policy engine : sévérité × mode, global/catégorie) — 5 tests
+- [x] Isolation (SIGSTOP, gel léger ; cgroup-freezer complet à venir)
+- [x] Contrôle UI→daemon (Command via WS bidirectionnel) — SetMode validé
+- [x] FIM credential access (fanotify FAN_ACCESS sur fichiers sensibles → T1003)
+- [x] Service systemd + capabilities minimales (packaging/aegis.service + install.sh)
 - [ ] Mise à jour des règles YARA (feed open source + règles maison)
-- [ ] Livrable : MVP utilisable au quotidien
+- [ ] Auto-protection daemon (T1562.001)
+- [ ] Commandes ScanOnDemand/ScanMemory/exclusions (stub)
+- [~] Livrable : MVP utilisable au quotidien — cœur fonctionnel, sondes eBPF à venir
 
 ## Backlog (hors MVP)
 - IA locale comportementale (classification séquences syscalls)

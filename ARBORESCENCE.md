@@ -43,13 +43,19 @@ aegis/
 │   └── aegis-daemon/                # orchestrateur (binaire tokio + tracing)
 │       ├── Cargo.toml
 │       └── src/
-│           ├── main.rs              # câblage pipeline + YARA + quarantaine + canaris + bridges
-│           ├── pipeline.rs          # ingestion, comportemental prioritaire, filtrage, scan
+│           ├── main.rs              # câblage pipeline + YARA + policy + enforcer + bridges
+│           ├── pipeline.rs          # ingestion, comportemental/FIM prioritaires, filtrage, scan
+│           ├── policy.rs            # PolicyEngine : réponse graduée sévérité × mode
+│           ├── enforce.rs           # Enforcer : application unique des décisions
+│           ├── command.rs           # traitement des commandes UI → daemon
 │           ├── ipc_socket.rs        # socket Unix, diffusion JSON du flux (StreamMessage)
-│           ├── ws_bridge.rs         # bridge WebSocket localhost → UI (flux JSON)
-│           ├── scan.rs              # thread scan YARA + quarantaine auto ≥ High
+│           ├── ws_bridge.rs         # bridge WebSocket localhost ↔ UI (flux + commandes)
+│           ├── scan.rs              # thread scan YARA → enforcer
 │           ├── demo.rs              # flux synthétique (--demo) pour validation UI hors root
 │           └── zones.rs             # classification zone chaude/froide (anti-bruit)
+├── packaging/
+│   ├── aegis.service                # unit systemd (capabilities minimales, durcissement)
+│   └── install.sh                   # installation service + binaire + règles (root)
 ├── ui/src/                          # dashboard React (Lot 4)
 │   ├── App.tsx                      # layout dashboard (header + détections + flux)
 │   ├── types.ts                     # miroir TS du contrat IPC (StreamMessage)
@@ -60,7 +66,8 @@ aegis/
 ├── tests/redteam/
 │   ├── lot1-exec-flux.sh            # validation flux exec temps réel (root)
 │   ├── lot2-eicar-quarantine.sh     # validation détection + quarantaine (root)
-│   └── lot3-ransomware-kill.sh      # validation ransomware tué avant propagation (root)
+│   ├── lot3-ransomware-kill.sh      # validation ransomware tué avant propagation (root)
+│   └── lot5-credential-fim.sh       # validation FIM credential access (root)
 ├── ui/                              # Tauri v2 + React/TS/Tailwind v4 dark
 │   ├── vite.config.ts               # plugins react + tailwindcss
 │   └── src/

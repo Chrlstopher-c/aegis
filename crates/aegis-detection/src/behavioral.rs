@@ -123,3 +123,35 @@ fn writable_exec_verdict(event: &EventEnvelope, path: &str) -> Verdict {
         recommended_action: Action::Notify,
     }
 }
+
+/// Process système légitimement amenés à lire les fichiers d'authentification.
+const CRED_READ_ALLOWLIST: &[&str] = &["sshd", "sudo", "su", "login", "passwd", "unix_chkpwd", "systemd"];
+
+/// FIM credential access : lecture d'un fichier sensible surveillé. La sonde ne
+/// marque QUE les fichiers sensibles en lecture, donc tout `Read` est un accès
+/// credential ; on écarte les lecteurs système légitimes (sshd, sudo…).
+pub struct CredentialWatch;
+
+impl CredentialWatch {
+    pub fn evaluate(event: &EventEnvelope) -> Option<Verdict> {
+        let EventPayload::File(file) = &event.payload else { return None };
+        if !matches!(file.op, FileOp::Read) {
+            return None;
+        }
+        if CRED_READ_ALLOWLIST.contains(&event.process.comm.as_str()) {
+            return None;
+        }
+        Some(Verdict {
+            schema_version: SCHEMA_VERSION,
+            event_id: event.event_id,
+            engine: Engine::Fim,
+            severity: Severity::High,
+            category: ThreatCategory::CredentialAccess,
+            mitre: vec!["T1003".to_string()],
+            confidence: 0.85,
+            title: format!("Lecture de credentials par {}", event.process.comm),
+            detail: format!("Accès en lecture au fichier sensible {}", file.path),
+            recommended_action: Action::Notify,
+        })
+    }
+}

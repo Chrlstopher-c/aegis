@@ -18,13 +18,22 @@ pub enum KillError {
 /// Tue immédiatement un process (`SIGKILL`). Idempotent : un process déjà mort
 /// (`ESRCH`) est traité comme un succès.
 pub fn kill_process(pid: u32) -> Result<(), KillError> {
+    send(pid, Signal::SIGKILL, "neutralisé (SIGKILL)")
+}
+
+/// Gèle un process (`SIGSTOP`) pour investigation, sans le tuer. Isolation légère
+/// — le gel cgroup-freezer + coupure des sockets viendra (cf. policy-model.md).
+pub fn isolate_process(pid: u32) -> Result<(), KillError> {
+    send(pid, Signal::SIGSTOP, "isolé (SIGSTOP, gelé)")
+}
+
+fn send(pid: u32, signal: Signal, label: &str) -> Result<(), KillError> {
     if pid == 0 {
         return Err(KillError::InvalidPid(pid));
     }
-    let target = Pid::from_raw(pid as i32);
-    match nix_kill(target, Signal::SIGKILL) {
+    match nix_kill(Pid::from_raw(pid as i32), signal) {
         Ok(()) => {
-            info!(pid, "process neutralisé (SIGKILL)");
+            info!(pid, "process {label}");
             Ok(())
         }
         Err(nix::Error::ESRCH) => {

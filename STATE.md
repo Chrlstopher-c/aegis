@@ -97,12 +97,30 @@ crate eBPF aya nightly.
   détections codées par sévérité + badges MITRE), zéro erreur console. **Le rendu
   visuel reste l'appel de Chris.**
 
+**Lot 5 (Réponse graduée & finition) — cœur DONE :**
+- `policy.rs` : `PolicyEngine` — réponse graduée par sévérité × mode (Detection/
+  Prevention), réglable global ou par catégorie (RwLock, modifiable à chaud).
+  Défaut : Detection global, `Impact`=Prevention. Table conforme policy-model.md. 5 tests.
+- `enforce.rs` : `Enforcer` — point unique d'application (Log/Notify/Quarantine/
+  Isolate/Kill), partagé pipeline + thread scan. `aegis-response/isolate_process`
+  (SIGSTOP, gel léger ; cgroup-freezer complet à venir).
+- **Contrôle UI→daemon** : bridge WS bidirectionnel (`command.rs`), `Command`
+  entrante → `CommandResult`. SetMode/Kill/Quarantine/Restore câblés. **Validé** :
+  SetMode{Global,Prevention} via WS → `{"ok":true}`, mode appliqué (log confirmé).
+- **FIM credential** : marques fanotify `FAN_ACCESS` sur fichiers sensibles
+  (`/etc/shadow`, clés SSH ; `AEGIS_SENSITIVE_FILES`). `CredentialWatch` → verdict
+  High/CredentialAccess/T1003, allowlist process système (sshd/sudo/su…).
+- **Service systemd** : `packaging/aegis.service` (capabilities minimales
+  CAP_SYS_ADMIN/DAC_READ_SEARCH/KILL/BPF, durcissement ProtectSystem/MDWX/etc.) +
+  `packaging/install.sh`. `scripts/start.sh` avertit si lancé sans root.
+
 **Dette restante :**
 - **Lot 3 tranche 3/3** : sondes **eBPF** (mmap W+X fileless, capset/setuid, socket_connect
   C2) via crate eBPF aya nightly — gros chantier kernel dédié. + rafale/entropie + corrélation.
-- **Lot 5** : réponse graduée, FIM, feed règles YARA, auto-protection daemon, service systemd.
-- Contrôle UI→daemon (`Command`) : le WS est lecture seule pour l'instant (prévu Lot 5).
-- Cache LRU des hash YARA. Sonde eBPF exec enrichie (cgroup/caps).
+- Auto-protection daemon (T1562.001 : détecter tentative de kill du daemon) — non fait.
+- Feed de règles YARA externe + cache LRU des hash. Sonde eBPF exec enrichie (cgroup/caps).
+- `ScanOnDemand`/`ScanMemory`/exclusions : commandes non encore câblées (stub).
+- Tests root à lancer : `tests/redteam/lot5-credential-fim.sh`.
 - Note : `/var/lib/aegis/quarantine` contient un EICAR de test (inoffensif).
 
 **Conception produit complète** (pas seulement MVP), corpus dans `docs/` (index

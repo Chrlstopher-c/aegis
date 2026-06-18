@@ -23,7 +23,7 @@ pub enum Severity {
 }
 
 /// Catégorie de menace, alignée sur les tactiques MITRE ATT&CK.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ThreatCategory {
     /// TA0002
     Execution,

@@ -16,7 +16,7 @@ use nix::sys::fanotify::{
     Response,
 };
 use tokio::sync::mpsc::UnboundedSender;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 use ulid::Ulid;
 
 use crate::proc::process_ctx;
@@ -33,9 +33,16 @@ pub enum ProbeError {
     Thread(#[source] std::io::Error),
 }
 
-/// Initialise fanotify, pose les marques (exécution + canaris) et lance la boucle
-/// de capture sur un thread dédié. Nécessite `CAP_SYS_ADMIN`.
-pub fn spawn(tx: UnboundedSender<EventEnvelope>, canaries: &[PathBuf]) -> Result<(), ProbeError> {
+/// Initialise fanotify, pose les marques (exécution + canaris + FIM credential)
+/// et lance la boucle de capture sur un thread dédié. Nécessite `CAP_SYS_ADMIN`.
+/// `sensitive` : fichiers dont la lecture est surveillée (shadow, clés SSH…) —
+/// comme on ne marque qu'eux en lecture, tout événement `Read` est un accès
+/// credential potentiel.
+pub fn spawn(
+    tx: UnboundedSender<EventEnvelope>,
+    canaries: &[PathBuf],
+    sensitive: &[PathBuf],
+) -> Result<(), ProbeError> {
     let fan = Fanotify::init(
         InitFlags::FAN_CLASS_CONTENT | InitFlags::FAN_CLOEXEC,
         EventFFlags::O_RDONLY,
@@ -59,11 +66,46 @@ pub fn spawn(tx: UnboundedSender<EventEnvelope>, canaries: &[PathBuf]) -> Result
     }
     info!(canaries = canaries.len(), "marques canari posées");
 
+    // FIM credential : marque inode par fichier sensible, notification de lecture.
+    let mut fim_count = 0usize;
+    for file in sensitive {
+        match fan.mark(canary_flags, MaskFlags::FAN_ACCESS, None, Some(file)) {
+            Ok(()) => fim_count += 1,
+            Err(err) => debug!(path = %file.display(), %err, "marque FIM ignorée (absent ?)"),
+        }
+    }
+    info!(files = fim_count, "marques FIM credential posées");
+
     thread::Builder::new()
         .name("aegis-fanotify".into())
         .spawn(move || run_loop(fan, tx))
         .map_err(ProbeError::Thread)?;
     Ok(())
+}
+
+/// Fichiers sensibles surveillés en lecture par défaut (FIM credential access).
+/// Surchargé par `AEGIS_SENSITIVE_FILES` (séparés par `:`). Inclut les clés SSH
+/// privées du home de `SUDO_USER` le cas échéant.
+pub fn default_sensitive_files() -> Vec<PathBuf> {
+    if let Some(raw) = std::env::var_os("AEGIS_SENSITIVE_FILES") {
+        return std::env::split_paths(&raw).collect();
+    }
+    let mut files: Vec<PathBuf> = ["/etc/shadow", "/etc/gshadow"]
+        .iter()
+        .map(PathBuf::from)
+        .collect();
+    if let Some(home) = sudo_user_home() {
+        for key in ["id_rsa", "id_ed25519", "id_ecdsa"] {
+            files.push(home.join(".ssh").join(key));
+        }
+    }
+    files
+}
+
+fn sudo_user_home() -> Option<PathBuf> {
+    let user = std::env::var("SUDO_USER").ok()?;
+    let home = PathBuf::from("/home").join(&user);
+    home.exists().then_some(home)
 }
 
 fn run_loop(fan: Fanotify, tx: UnboundedSender<EventEnvelope>) {
@@ -101,6 +143,8 @@ fn acknowledge_batch(fan: &Fanotify, events: &[FanotifyEvent]) -> Vec<(u32, Stri
             captured.push((event.pid().max(0) as u32, path, FileOp::OpenExec));
         } else if mask.contains(MaskFlags::FAN_MODIFY) {
             captured.push((event.pid().max(0) as u32, path, FileOp::Write));
+        } else if mask.contains(MaskFlags::FAN_ACCESS) {
+            captured.push((event.pid().max(0) as u32, path, FileOp::Read));
         }
     }
     captured

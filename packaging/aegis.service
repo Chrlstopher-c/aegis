@@ -1,0 +1,34 @@
+[Unit]
+Description=Aegis — EDR desktop temps réel (daemon)
+Documentation=https://github.com/trinityUwU/aegis
+After=local-fs.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/aegis-daemon
+Environment=RUST_LOG=info
+Environment=AEGIS_RULES_DIR=/usr/share/aegis/rules
+
+# Privilèges minimaux plutôt que root nu (cf. policy-model.md). fanotify exige
+# CAP_SYS_ADMIN ; lecture pour scan ; kill pour la réponse ; BPF pour les sondes.
+AmbientCapabilities=CAP_SYS_ADMIN CAP_DAC_READ_SEARCH CAP_KILL CAP_BPF
+CapabilityBoundingSet=CAP_SYS_ADMIN CAP_DAC_READ_SEARCH CAP_KILL CAP_BPF
+NoNewPrivileges=true
+
+# Durcissement : le daemon ne doit pas devenir un vecteur. État persistant limité
+# à son répertoire de quarantaine.
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/aegis
+StateDirectory=aegis
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+MemoryDenyWriteExecute=true
+
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
