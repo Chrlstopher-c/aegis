@@ -12,6 +12,15 @@ use aegis_core::{AppAttribution, AppKind};
 /// Comms de shells : transparents dans l'attribution (on cherche l'app derrière).
 const SHELLS: &[&str] = &["sh", "bash", "zsh", "fish", "dash", "ksh", "tcsh"];
 
+/// Binaires « hôtes » génériques : leur basename ne nomme pas l'application (un
+/// script node s'appelle `node`). Dans ce cas le `comm` porte le vrai nom logique
+/// (ex. `claude`), on le préfère au basename de l'exe.
+const RUNTIMES: &[&str] = &[
+    "node", "electron", "python", "python3", "python2", "ruby", "java", "perl",
+    "deno", "bun", "php", "lua", "wine", "mono", "dotnet", "sh", "bash", "zsh",
+    "fish", "dash", "ksh", "tcsh",
+];
+
 /// Comms qui marquent une frontière : leur enfant est l'application racine
 /// (compositors, gestionnaires de session, display managers, init).
 const MANAGERS: &[&str] = &[
@@ -66,7 +75,7 @@ fn walk_terminal(pid: u32, term_leaf: &str, term_name: &str) -> AppAttribution {
     // chain : du plus profond au plus haut → on prend le plus haut non-shell.
     for (p, comm) in chain.iter().rev() {
         if !is_shell(comm) {
-            return app(prettify(comm), AppKind::Terminal, *p);
+            return app(display_name(*p), AppKind::Terminal, *p);
         }
     }
     app(prettify(term_name), AppKind::Terminal, pid)
@@ -87,10 +96,27 @@ fn walk_session(pid: u32) -> AppAttribution {
         }
         cur = ppid;
     }
-    let name = read_comm(cur).filter(|c| !is_shell(c)).unwrap_or_else(|| {
-        read_comm(pid).unwrap_or_else(|| "inconnu".into())
-    });
-    app(prettify(&name), AppKind::Desktop, cur)
+    app(display_name(cur), AppKind::Desktop, cur)
+}
+
+/// Nom lisible d'un process : basename de l'exe, sauf runtime générique ou numéro
+/// de version (→ on retombe sur le `comm`, plus parlant) ; un shell est nommé par
+/// le script qu'il exécute. Source générale, sans table d'applications.
+fn display_name(pid: u32) -> String {
+    let comm = read_comm(pid).unwrap_or_default();
+    let exe_base = read_exe_basename(pid);
+    let mut base = match exe_base {
+        Some(e) if !is_runtime(&e) && !is_version_like(&e) => e,
+        _ if !comm.is_empty() => comm.clone(),
+        Some(e) => e,
+        None => "inconnu".to_string(),
+    };
+    if is_shell(&base) {
+        if let Some(script) = script_basename(pid) {
+            base = script;
+        }
+    }
+    prettify_proc(&base)
 }
 
 fn parse_leaf(cg: &str) -> Leaf {
@@ -140,6 +166,50 @@ fn split_trailing_pid(s: &str) -> (String, u32) {
         }
         _ => (s.to_string(), 0),
     }
+}
+
+/// Met une majuscule initiale sans toucher au reste (préserve `cli.sh`,
+/// `quickshell`, les casses internes). Pour les noms de process, pas d'app-id.
+fn prettify_proc(raw: &str) -> String {
+    let s = raw.trim();
+    let mut chars = s.chars();
+    match chars.next() {
+        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+        None => s.to_string(),
+    }
+}
+
+fn is_runtime(name: &str) -> bool {
+    RUNTIMES.contains(&name)
+}
+
+/// Vrai si la chaîne n'est qu'une version (`2.1.181`) : un tel basename d'exe ne
+/// nomme pas l'application.
+fn is_version_like(name: &str) -> bool {
+    !name.is_empty() && name.chars().all(|c| c.is_ascii_digit() || c == '.')
+}
+
+/// Basename de la cible de `/proc/<pid>/exe`.
+fn read_exe_basename(pid: u32) -> Option<String> {
+    let target = fs::read_link(format!("/proc/{pid}/exe")).ok()?;
+    target.file_name().map(|n| n.to_string_lossy().into_owned())
+}
+
+/// Basename du premier argument « fichier » d'un shell (le script exécuté).
+fn script_basename(pid: u32) -> Option<String> {
+    let raw = fs::read(format!("/proc/{pid}/cmdline")).ok()?;
+    let args: Vec<&[u8]> = raw.split(|b| *b == 0).filter(|s| !s.is_empty()).collect();
+    for arg in args.iter().skip(1) {
+        let s = String::from_utf8_lossy(arg);
+        if s.starts_with('-') {
+            continue;
+        }
+        let base = s.rsplit('/').next().unwrap_or(&s);
+        if !base.is_empty() {
+            return Some(base.to_string());
+        }
+    }
+    None
 }
 
 /// Rend lisible un identifiant cgroup : reverse-DNS → dernier segment, majuscule.
@@ -237,5 +307,20 @@ mod tests {
     fn prettify_handles_reverse_dns_and_plain() {
         assert_eq!(prettify("org.chromium.Chromium"), "Chromium");
         assert_eq!(prettify("discord"), "Discord");
+    }
+
+    #[test]
+    fn version_like_distingue_exe_inutile() {
+        assert!(is_version_like("2.1.181"));
+        assert!(!is_version_like("quickshell"));
+        assert!(is_runtime("node"));
+        assert!(!is_runtime("quickshell"));
+    }
+
+    #[test]
+    fn prettify_proc_preserve_extensions_et_casse() {
+        // contrairement à prettify (app-id), ne coupe pas sur les points.
+        assert_eq!(prettify_proc("cli.sh"), "Cli.sh");
+        assert_eq!(prettify_proc("quickshell"), "Quickshell");
     }
 }
