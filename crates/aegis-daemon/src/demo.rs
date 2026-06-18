@@ -31,6 +31,8 @@ fn sample_execs() -> Vec<(&'static str, &'static str, u32, Option<AppAttribution
         ("dropper", "/tmp/dropper", 4042, app("Chrome", AppKind::Desktop, 109254)),
         ("python3", "/usr/bin/python3", 1555, app("Claude Code", AppKind::Terminal, 1180)),
         ("nc", "/tmp/.x/nc", 4099, None),
+        ("cron", "/usr/sbin/cron", 812, app("Cron", AppKind::Service, 812)),
+        ("systemd", "/usr/lib/systemd/systemd", 1, app("Système", AppKind::System, 1)),
     ]
 }
 
