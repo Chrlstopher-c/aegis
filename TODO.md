@@ -1,5 +1,11 @@
 # TODO — Aegis
-*Dernière mise à jour : 2026-06-17*
+*Dernière mise à jour : 2026-06-18*
+
+## 🎯 Prochaine session (priorité)
+- [ ] Débloquer fenêtre Tauri sous Wayland (`Gdk Error 71`) — tester `WEBKIT_DISABLE_DMABUF_RENDERER=1` (+ `GDK_BACKEND=x11`) ; sinon acter fallback navigateur
+- [ ] **Chantier eBPF** (Lot 3 tranche 3) : crate `aegis-probes-ebpf` (aya, nightly) — mmap W+X (fileless), capset/setuid (escalade), socket_connect (C2). Le plus gros morceau restant.
+- [ ] Dette canaris : `deploy_canaries` doit `chown` vers l'utilisateur réel (sinon canaris root dans le home en prod systemd)
+- [ ] Pousser le binaire release à jour dans le service : `sudo ./packaging/install.sh && sudo systemctl restart aegis`
 
 ## Conception (session 2026-06-17 — terminée)
 - [x] Vision, cibles, stack, architecture, specs fondamentales (IPC, détection, policy)

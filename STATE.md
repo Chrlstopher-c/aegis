@@ -5,8 +5,43 @@
 
 ## Statut global
 
-**Phase : exécution — Lot 0 terminé et validé.** Le scaffold applicatif existe et
-compile. Pré-vol environnement passé sans bloquant majeur.
+**Phase : exécution — Lots 0 à 5 livrés. MVP fonctionnel installé en service.**
+Daemon Rust opérationnel (fanotify temps réel + YARA + comportemental + FIM +
+policy graduée + réponse), UI dashboard React branchée sur bridge WebSocket,
+service systemd actif. 13 tests workspace verts, clippy clean. Détail par lot plus bas.
+
+---
+
+## ⏩ REPRISE — état actuel & prochaines étapes
+
+**Ce qui tourne :**
+- Service systemd `aegis` **actif** (root, fanotify réel, redémarre au boot).
+  Géré via `systemctl {status,restart,stop} aegis` · logs `journalctl -u aegis -f`.
+- Binaire release à jour rebuild le 18/06 15:47 (`target/release/aegis-daemon`,
+  owner trinity). **Pour pousser la version à jour dans le service** :
+  `sudo ./packaging/install.sh && sudo systemctl restart aegis`.
+- UI : `cd ui && WEBKIT_DISABLE_DMABUF_RENDERER=1 bun run tauri dev` (fenêtre Tauri),
+  ou `bun run dev` + http://localhost:1420 (navigateur). Se connecte au WS du daemon.
+
+**Bloquant UI connu (non résolu) :** `tauri dev` compile OK mais la fenêtre crashe
+sur `Gdk Error 71 dispatching to Wayland display` (WebKitGTK + Wayland). Contournement
+à tester : `WEBKIT_DISABLE_DMABUF_RENDERER=1` (+ `GDK_BACKEND=x11` au besoin). Si ça
+persiste, fallback navigateur (`bun run dev`) fonctionne. **À trancher next session.**
+
+**Prochaines étapes (par priorité) :**
+1. **Débloquer la fenêtre Tauri sous Wayland** (env vars ci-dessus) — sinon valider
+   l'UI en navigateur et acter le fallback.
+2. **Chantier eBPF (Lot 3 tranche 3)** — LE gros morceau restant : sondes aya
+   (mmap W+X fileless, capset/setuid escalade, socket_connect C2). Crate eBPF nightly
+   `crates/aegis-probes-ebpf` (déjà prévu exclu du workspace). Mérite sa propre session.
+3. **Dette canaris** : `deploy_canaries` doit `chown` vers l'utilisateur réel (sinon
+   canaris root dans le home en prod). `scripts/clean-canaries.sh` pour le ménage.
+4. Auto-protection daemon (T1562.001), feed YARA externe, cache LRU hash, commandes
+   ScanOnDemand/ScanMemory/exclusions (stubs), corrélation + rafale/entropie ransomware.
+
+---
+
+### Détail par lot (historique)
 
 **Lot 0 (Fondation & scaffold) — DONE :**
 - Pré-vol kernel : `CONFIG_BPF_LSM=y`, `FANOTIFY`+`ACCESS_PERMISSIONS`=y, BTF présent,

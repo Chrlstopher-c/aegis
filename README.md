@@ -4,8 +4,9 @@ Antivirus desktop Linux temps réel, 100 % local et souverain. Hybride : moteur 
 détection par signatures (YARA) **et** détection comportementale dans le kernel
 (eBPF + fanotify). Aucune télémétrie cloud, aucun port réseau ouvert par défaut.
 
-> Statut : **documentation / conception**. Aucun code applicatif n'est encore
-> implémenté. Ce dépôt contient la vision, l'architecture et la roadmap.
+> Statut : **MVP fonctionnel** (Lots 0→5). Daemon temps réel + UI dashboard +
+> service systemd. Reste à venir : sondes eBPF (fileless/escalade), finitions.
+> Voir [`STATE.md`](./STATE.md) pour l'état détaillé et les prochaines étapes.
 
 ## Pourquoi
 
@@ -24,11 +25,27 @@ pourra être dérivée plus tard.
 
 | Couche | Choix |
 |---|---|
-| Sondes kernel | Rust — eBPF (`aya`), fanotify |
-| Moteur signatures | YARA (`yara-rust`), scan fichier + mémoire |
+| Sondes kernel | Rust — fanotify (actif) ; eBPF (`aya`) à venir |
+| Moteur signatures | YARA (`yara-x`, pur Rust), scan fichier + mémoire |
 | Daemon | Rust — orchestrateur, policy engine, socket Unix + WebSocket |
-| UI | React + TypeScript + Tailwind (dark), empaquetée via Tauri |
-| IPC temps réel | Socket Unix local + WebSocket |
+| UI | React + TypeScript + Tailwind (dark), empaquetée via Tauri v2 |
+| IPC temps réel | Socket Unix local + WebSocket (`127.0.0.1:8787`) |
+
+## Lancer
+
+```sh
+# Backend : compiler puis installer comme service systemd (capabilities minimales)
+cargo build --release
+sudo ./packaging/install.sh
+sudo systemctl enable --now aegis        # logs : journalctl -u aegis -f
+
+# UI (fenêtre Tauri) — se connecte au bridge WebSocket du daemon
+cd ui && WEBKIT_DISABLE_DMABUF_RENDERER=1 bun run tauri dev
+# ou en navigateur : bun run dev → http://localhost:1420
+```
+
+Sans systemd, en dev : `sudo ./scripts/start.sh` (root requis pour fanotify).
+Mode démo UI sans privilèges : `./target/debug/aegis-daemon --demo`.
 
 ## Principes non négociables
 

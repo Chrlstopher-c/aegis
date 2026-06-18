@@ -56,6 +56,8 @@ aegis/
 ├── packaging/
 │   ├── aegis.service                # unit systemd (capabilities minimales, durcissement)
 │   └── install.sh                   # installation service + binaire + règles (root)
+├── scripts/
+│   └── clean-canaries.sh            # nettoyage des canaris résiduels dans le home
 ├── ui/src/                          # dashboard React (Lot 4)
 │   ├── App.tsx                      # layout dashboard (header + détections + flux)
 │   ├── types.ts                     # miroir TS du contrat IPC (StreamMessage)
