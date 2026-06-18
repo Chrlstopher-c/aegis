@@ -21,11 +21,14 @@ printf 'root:$6$secret-hash\n' > "$SECRET"
 cleanup() {
   [[ -n "${DAEMON_PID:-}" ]] && kill "$DAEMON_PID" 2>/dev/null || true
   rm -f "$SECRET"
+  rm -rf "/tmp/aegis_canary_$$"
 }
 trap cleanup EXIT
 
 echo "▶ Démarrage du daemon (fichier sensible surveillé : $SECRET)…"
-AEGIS_SENSITIVE_FILES="$SECRET" AEGIS_RULES_DIR="$ROOT/rules" RUST_LOG=info \
+# AEGIS_CANARY_DIRS pointé vers un tmp jetable pour ne PAS polluer le home réel.
+AEGIS_CANARY_DIRS="/tmp/aegis_canary_$$" AEGIS_SENSITIVE_FILES="$SECRET" \
+  AEGIS_RULES_DIR="$ROOT/rules" RUST_LOG=info \
   "$BIN" >> "$LOG" 2>&1 &
 DAEMON_PID=$!
 sleep 2

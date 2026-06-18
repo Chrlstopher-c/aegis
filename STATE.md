@@ -120,8 +120,13 @@ crate eBPF aya nightly.
 - Auto-protection daemon (T1562.001 : détecter tentative de kill du daemon) — non fait.
 - Feed de règles YARA externe + cache LRU des hash. Sonde eBPF exec enrichie (cgroup/caps).
 - `ScanOnDemand`/`ScanMemory`/exclusions : commandes non encore câblées (stub).
-- Tests root à lancer : `tests/redteam/lot5-credential-fim.sh`.
+- Tests root à lancer : `tests/redteam/lot5-credential-fim.sh` (FIM validé E2E : cat→T1003 ✓).
 - Note : `/var/lib/aegis/quarantine` contient un EICAR de test (inoffensif).
+- **Dette canaris** : `deploy_canaries` crée les leurres avec l'ownership du daemon
+  (root en prod systemd) dans le home utilisateur → fichiers root visibles et non
+  modifiables par l'utilisateur. À corriger : `chown` vers l'utilisateur réel +
+  attribut caché, et nettoyage à l'uninstall. `scripts/clean-canaries.sh` pour le
+  ménage manuel en attendant. Tests corrigés pour ne plus polluer le home réel.
 
 **Conception produit complète** (pas seulement MVP), corpus dans `docs/` (index
 `docs/README.md`) :
