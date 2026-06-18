@@ -26,12 +26,17 @@ mkdir -p "$BIN_DIR" "$APP_DIR" "$ICON_DIR" "$AUTOSTART_DIR"
 install -m 755 "$appimage" "$TARGET_APPIMAGE"
 install -m 644 "$ICON_SRC" "$ICON_DIR/$APP_ID.png"
 
+# WEBKIT_DISABLE_DMABUF_RENDERER=1 : sans ça, webkit2gtk rend un écran blanc sous
+# Wayland (bug connu dmabuf). Indispensable dans le .desktop (le lanceur ne porte
+# pas l'env du shell).
+WEBKIT_ENV="env WEBKIT_DISABLE_DMABUF_RENDERER=1 WEBKIT_DISABLE_COMPOSITING_MODE=1"
+
 cat > "$APP_DIR/$APP_ID.desktop" <<EOF
 [Desktop Entry]
 Type=Application
 Name=Aegis
 Comment=EDR local souverain — protection desktop
-Exec=$TARGET_APPIMAGE
+Exec=$WEBKIT_ENV $TARGET_APPIMAGE
 Icon=$APP_ID
 Terminal=false
 Categories=Utility;Security;System;
@@ -43,7 +48,7 @@ cat > "$AUTOSTART_DIR/$APP_ID.desktop" <<EOF
 Type=Application
 Name=Aegis (tray)
 Comment=Client de contrôle Aegis dans le SysTray
-Exec=$TARGET_APPIMAGE --hidden
+Exec=$WEBKIT_ENV $TARGET_APPIMAGE --hidden
 Icon=$APP_ID
 Terminal=false
 Categories=Utility;Security;System;
