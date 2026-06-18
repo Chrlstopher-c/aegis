@@ -1,14 +1,37 @@
 # STATE — Aegis
-*Dernière mise à jour : 2026-06-17*
+*Dernière mise à jour : 2026-06-18*
 
 > Résumé vivant cross-session. Garder < 300 lignes.
 
 ## Statut global
 
-**Phase : conception / documentation.** Aucun code applicatif. Le dépôt contient
-la vision, l'architecture, la roadmap et les specs fondamentales (IPC, catalogue
-de détection, modèle de policy). Prochaine étape exécutable : scaffold du
-workspace Cargo et du projet UI (Phase 0, non démarré).
+**Phase : exécution — Lot 0 terminé et validé.** Le scaffold applicatif existe et
+compile. Pré-vol environnement passé sans bloquant majeur.
+
+**Lot 0 (Fondation & scaffold) — DONE :**
+- Pré-vol kernel : `CONFIG_BPF_LSM=y`, `FANOTIFY`+`ACCESS_PERMISSIONS`=y, BTF présent,
+  **`bpf` actif dans les LSM** → enforcement BPF-LSM disponible nativement, pas de
+  modif GRUB ni reboot nécessaire (kill in-kernel possible, pas de fallback SIGKILL).
+- Toolchain : `rustup` installé (installeur officiel, non destructif, shims dans
+  `~/.cargo/bin`), `nightly` + `rust-src` + `bpf-linker v0.10.3` posés. Default global
+  remis sur `stable`, nightly réservé à Aegis. `rust-toolchain.toml` pinne stable au
+  workspace. bun 1.3.13, clang 22 OK.
+- Workspace Cargo : `crates/{aegis-core,aegis-detection,aegis-response,aegis-daemon}`
+  (`aegis-probes` exclu du workspace : compile sur cible bpf, viendra au Lot 1).
+- `aegis-core` : contrat IPC complet et figé (events/process/verdict/command) conforme
+  à `docs/ipc-contract.md` — `EventEnvelope`, `ProcessCtx`, 5 payloads, `Verdict`,
+  `Command`, enums `Severity`/`ThreatCategory` (8 tactiques MITRE)/`Action`. `SCHEMA_VERSION=1`.
+- `aegis-detection` : trait `DetectionEngine` (stub). `aegis-response` : `apply()` stub.
+  `aegis-daemon` : binaire tokio + tracing (log de démarrage, pipeline non câblé).
+- `scripts/start|stop|restart.sh` : PID dans `logs/aegis.pid`, reset logs (pas d'append).
+- UI : Tauri v2 + React + TS + **Tailwind v4** (dark), build via Bun/Vite. Page
+  placeholder dark épurée (accent emerald). **Validé E2E** : `cargo build` vert,
+  daemon démarre, `bun run build` vert, rendu screenshoté (`logs/screenshots/lot0-ui.png`),
+  zéro erreur console/process.
+
+**Prochaine étape : Lot 1** — capteurs kernel (eBPF exec via aya + fanotify
+`FAN_OPEN_EXEC_PERM`) + daemon cœur (boucle ingestion tokio, socket Unix
+`/run/aegis/aegis.sock`). Nécessite root pour tester (chargement eBPF, fanotify PERM).
 
 **Conception produit complète** (pas seulement MVP), corpus dans `docs/` (index
 `docs/README.md`) :

@@ -1,9 +1,45 @@
 # Arborescence — Aegis
 
-Une ligne par fichier. Le code applicatif n'existe pas encore : la section
-**Existant** liste le présent, **Structure prévue** documente la cible Phase 0+.
+Une ligne par fichier. **Code applicatif** = scaffold Lot 0 livré (workspace + UI).
+**Structure prévue** documente la cible au-delà du Lot 0.
 
-## Existant
+## Code applicatif (Lot 0)
+
+```
+aegis/
+├── Cargo.toml                       # workspace (core+detection+response+daemon ; probes exclu)
+├── rust-toolchain.toml              # pinne stable au workspace (probes → nightly explicite)
+├── crates/
+│   ├── aegis-core/                  # contrat IPC, aucun métier
+│   │   ├── Cargo.toml
+│   │   └── src/
+│   │       ├── lib.rs               # exports + SCHEMA_VERSION
+│   │       ├── process.rs           # ProcessCtx
+│   │       ├── events.rs            # EventEnvelope, EventSource, 5 payloads
+│   │       ├── verdict.rs           # Verdict, Engine, Severity, ThreatCategory, Action
+│   │       └── command.rs           # Command, CommandResult, Mode/Exclusion enums
+│   ├── aegis-detection/             # moteurs de verdict (stub : trait DetectionEngine)
+│   │   ├── Cargo.toml
+│   │   └── src/lib.rs
+│   ├── aegis-response/              # application des actions (stub : apply())
+│   │   ├── Cargo.toml
+│   │   └── src/lib.rs
+│   └── aegis-daemon/                # orchestrateur (binaire tokio + tracing)
+│       ├── Cargo.toml
+│       └── src/main.rs
+├── ui/                              # Tauri v2 + React/TS/Tailwind v4 dark
+│   ├── vite.config.ts               # plugins react + tailwindcss
+│   └── src/
+│       ├── main.tsx                 # entrée React, import index.css
+│       ├── App.tsx                  # page placeholder dark (Lot 0)
+│       └── index.css                # @import tailwindcss, color-scheme dark
+├── scripts/
+│   ├── start.sh                     # PID logs/aegis.pid, reset logs/daemon.log
+│   ├── stop.sh                      # kill via PID file
+│   └── restart.sh                   # stop + start
+```
+
+## Documentation & racine
 
 ```
 aegis/

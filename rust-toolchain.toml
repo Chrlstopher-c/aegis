@@ -1,0 +1,4 @@
+# Workspace principal sur stable. La crate eBPF aegis-probes compile sur nightly
+# explicitement (cargo +nightly), voir crates/aegis-probes (Lot 1).
+[toolchain]
+channel = "stable"

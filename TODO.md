@@ -20,8 +20,10 @@ réponse. Chaque phase a un livrable validé avant d'enchaîner.
 - [x] Licence MIT
 - [x] Dépôt local + git
 - [x] Repo GitHub public — https://github.com/trinityUwU/aegis
-- [ ] Scaffold workspace Cargo (`crates/`) + projet UI (`ui/`)
-- [ ] Scripts `start.sh` / `stop.sh` / `restart.sh` avec gestion PID + reset logs
+- [x] Pré-vol environnement (kernel BPF-LSM/fanotify/BTF OK · nightly+bpf-linker installés)
+- [x] Scaffold workspace Cargo (`crates/` : core+detection+response+daemon) + `aegis-core` contrat IPC complet
+- [x] Scaffold UI Tauri v2 + React/TS/Tailwind v4 dark (page placeholder, build vert, rendu validé)
+- [x] Scripts `start.sh` / `stop.sh` / `restart.sh` avec gestion PID + reset logs
 
 ### Phase 1 — Capteurs kernel + daemon cœur
 - [ ] fanotify on-access bloquant sur exécution + zones chaudes (`~/Downloads`, `/tmp`, autostart, cron/systemd user)
