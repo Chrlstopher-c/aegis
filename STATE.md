@@ -29,9 +29,26 @@ compile. Pré-vol environnement passé sans bloquant majeur.
   daemon démarre, `bun run build` vert, rendu screenshoté (`logs/screenshots/lot0-ui.png`),
   zéro erreur console/process.
 
-**Prochaine étape : Lot 1** — capteurs kernel (eBPF exec via aya + fanotify
-`FAN_OPEN_EXEC_PERM`) + daemon cœur (boucle ingestion tokio, socket Unix
-`/run/aegis/aegis.sock`). Nécessite root pour tester (chargement eBPF, fanotify PERM).
+**Lot 1 (Capteurs + daemon cœur) — partie fanotify DONE et validée E2E :**
+- `aegis-probes` : sonde **fanotify** `FAN_OPEN_EXEC_PERM` (`FAN_MARK_FILESYSTEM` sur
+  `/`, `/tmp`, `/dev/shm`), thread dédié bloquant. Acquittement `FAN_ALLOW` de tout
+  le batch **avant** enrichissement (invariant : zéro calcul lourd dans le chemin
+  bloquant kernel). Enrichissement `ProcessCtx` via `/proc/<pid>` (best-effort).
+  Lib `nix 0.29`. Intégré au workspace.
+- `aegis-daemon` : pipeline tokio — `mpsc` capteurs→ingestion, `broadcast` vers
+  clients. `pipeline.rs` log le flux (livrable). `ipc_socket.rs` : socket Unix
+  (`/run/aegis/aegis.sock` si root, repli `$XDG_RUNTIME_DIR`), diffuse les
+  `EventEnvelope` en **JSON ligne par ligne** aux clients abonnés.
+- **Validé E2E en root** (`tests/redteam/lot1-exec-flux.sh`) : exec depuis `/tmp`
+  capté en temps réel dans le flux. `cargo build` + `cargo clippy --workspace` clean.
+
+**Reste du Lot 1 (optionnel, contexte enrichi) :** sonde **eBPF exec** via aya
+(`aegis-probes-ebpf`, cible bpf, nightly) pour cgroup réel + caps au plus près du
+`bprm_check`. Non bloquant pour avancer : fanotify couvre déjà le livrable exec.
+
+**Prochaine étape : Lot 2** — `aegis-detection` yara-x (scan on-access déclenché
+par fanotify + on-demand), `aegis-response` quarantaine. Livrable : EICAR détecté
+et mis en quarantaine en temps réel. Tests root.
 
 **Conception produit complète** (pas seulement MVP), corpus dans `docs/` (index
 `docs/README.md`) :

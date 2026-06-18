@@ -2,12 +2,15 @@
 resolver = "2"
 members = [
     "crates/aegis-core",
+    "crates/aegis-probes",
     "crates/aegis-detection",
     "crates/aegis-response",
     "crates/aegis-daemon",
 ]
-# aegis-probes est exclu du workspace par défaut : il compile sur la cible
-# bpfel-unknown-none (nightly + bpf-linker) et casserait `cargo build` global.
+# Le programme eBPF vit dans crates/aegis-probes-ebpf (cible bpfel-unknown-none,
+# nightly + bpf-linker) et est exclu du workspace : il casserait `cargo build`
+# global. aegis-probes (loader/fanotify, userspace) compile sur stable.
+exclude = ["crates/aegis-probes-ebpf"]
 
 [workspace.package]
 version = "0.1.0"
@@ -26,3 +29,5 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 thiserror = "2"
 anyhow = "1"
 ulid = "1"
+nix = { version = "0.29", features = ["fanotify", "fs"] }
+libc = "0.2"

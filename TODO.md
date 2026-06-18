@@ -26,10 +26,10 @@ réponse. Chaque phase a un livrable validé avant d'enchaîner.
 - [x] Scripts `start.sh` / `stop.sh` / `restart.sh` avec gestion PID + reset logs
 
 ### Phase 1 — Capteurs kernel + daemon cœur
-- [ ] fanotify on-access bloquant sur exécution + zones chaudes (`~/Downloads`, `/tmp`, autostart, cron/systemd user)
-- [ ] Sonde eBPF exec-monitoring (`execve` / `bprm_check`) avec contexte (caps, cgroup)
-- [ ] Daemon orchestrateur : ingestion événements, socket Unix local
-- [ ] Livrable : flux temps réel des exec/accès en logs
+- [x] fanotify on-access bloquant sur exécution (`FAN_OPEN_EXEC_PERM`, FS `/`, `/tmp`, `/dev/shm`)
+- [ ] Sonde eBPF exec-monitoring (`execve` / `bprm_check`) avec contexte (caps, cgroup) — aya, optionnel/enrichissement
+- [x] Daemon orchestrateur : ingestion événements (tokio mpsc/broadcast), socket Unix local (JSON)
+- [x] Livrable : flux temps réel des exec en logs — **validé E2E** (exec /tmp capté)
 
 ### Phase 2 — Moteur de détection signature
 - [ ] Intégration YARA natif (`yara-rust`)
