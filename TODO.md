@@ -2,17 +2,27 @@
 *Dernière mise à jour : 2026-06-18*
 
 ## 🎯 Prochaine session (priorité)
-- [x] Débloquer fenêtre Tauri sous Wayland — `WEBKIT_DISABLE_DMABUF_RENDERER=1 bun run tauri dev` (validé)
-- [x] Dette canaris : `deploy` `chown` vers l'utilisateur réel (`SUDO_USER`) — fait
-- [x] UI : agrégation du flux temps réel (compteur ×N, anti-firehose) — validé E2E
-- [x] UI : actions par détection (quarantaine/kill) câblées daemon via WS — validé E2E
+- [ ] **⚠️ EN PREMIER — redéployer le daemon** (sinon panel quarantaine + Lot A échouent,
+      erreur `unknown variant ListQuarantine`). Release déjà compilé :
+      `sudo ./packaging/install.sh && sudo systemctl restart aegis` (jamais build en root)
+- [ ] **Lot B — UI du modèle de réponse interactif** (périmètre validé Chris) : panneau
+      « décisions en attente » (chaque medium → quarantaine / kill / **autoriser**) +
+      panneau exceptions (liste / suppression). « Autoriser » = AddExclusion par exe_path.
+      Valider E2E avec une vraie menace medium qui remonte dans le panneau.
+- [ ] **Lot C** : notifications natives (toast système sur détection critique)
 - [ ] **Chantier eBPF** (Lot 3 tranche 3) — BLOQUÉ : outillage absent (ni rustup, ni nightly,
       ni bpf-linker ; Rust = paquet Arch stable 1.96). Réinstaller rustup+nightly+rust-src+bpf-linker
       avant d'attaquer. crate `aegis-probes-ebpf` (aya) : mmap W+X (fileless), capset/setuid, socket_connect (C2).
-- [ ] Pousser le binaire release à jour dans le service (intègre le fix chown canaris) :
-      `cargo build --release && sudo ./packaging/install.sh && sudo systemctl restart aegis`
 - [ ] Toggle mode Detection/Prevention dans l'UI — nécessite que le daemon pousse son mode courant
       (ajout contrat : message de statut initial) sinon le toggle ment à la reconnexion
+
+## ✅ Terminé — session 2026-06-18 (suite)
+- [x] Empaquetage AppImage + bouclier SysTray (vert/rouge, clic→dashboard, close-to-tray) + intégration OS
+- [x] Fix écran blanc webkit2gtk/Wayland — WEBKIT_DISABLE_DMABUF_RENDERER dans les .desktop
+- [x] Panel quarantaine UI (liste/restaure/supprime, confirm 2 temps) — validé E2E
+- [x] Banc red-team `tests/redteam/pentest.sh` (4 vecteurs + 3 non couverts eBPF)
+- [x] Lot A backend : réponse graduée interactive (Defer medium + exclusions + file d'attente) — tests 7/7
+- [x] Dette canaris : `chown` vers l'utilisateur réel (`SUDO_USER`) — fait (session précédente)
 
 ## Conception (session 2026-06-17 — terminée)
 - [x] Vision, cibles, stack, architecture, specs fondamentales (IPC, détection, policy)

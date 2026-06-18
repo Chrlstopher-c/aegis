@@ -37,8 +37,10 @@ aegis/
 │   ├── aegis-response/              # application des actions
 │   │   ├── Cargo.toml
 │   │   ├── src/
-│   │   │   ├── lib.rs               # exports Quarantine, kill_process
-│   │   │   ├── quarantine.rs        # store quarantaine + restauration
+│   │   │   ├── lib.rs               # exports Quarantine, kill_process, ExclusionStore, PendingStore
+│   │   │   ├── quarantine.rs        # store quarantaine + restauration + purge
+│   │   │   ├── exclusions.rs        # allowlist persistée (path/process) → court-circuite la détection
+│   │   │   ├── pending.rs           # file persistée des décisions en attente (medium déférés)
 │   │   │   └── kill.rs              # neutralisation SIGKILL
 │   │   └── tests/quarantine.rs      # round-trip quarantine/restore
 │   └── aegis-daemon/                # orchestrateur (binaire tokio + tracing)

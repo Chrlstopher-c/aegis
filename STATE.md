@@ -13,31 +13,47 @@ service systemd actif. 13 tests workspace verts, clippy clean. Détail par lot p
 ---
 
 ## ⏩ REPRISE — état actuel & prochaines étapes
+*(session 2026-06-18 suite : AppImage+tray, panel quarantaine, banc red-team, fix écran blanc, Lot A réponse graduée interactive)*
+
+**⚠️ ACTION REQUISE EN PREMIER (sinon l'UI échoue) :** le daemon systemd tourne un
+binaire périmé qui ne connaît pas les commandes du Lot A (`ListQuarantine`, exclusions,
+pending → erreur `unknown variant`). Le release à jour est **déjà compilé**
+(`target/release/aegis-daemon`). **Redéployer :**
+`sudo ./packaging/install.sh && sudo systemctl restart aegis` (jamais build en root).
 
 **Ce qui tourne :**
-- Service systemd `aegis` **actif** (root, fanotify réel, redémarre au boot).
-  Géré via `systemctl {status,restart,stop} aegis` · logs `journalctl -u aegis -f`.
-- Binaire release à jour rebuild le 18/06 15:47 (`target/release/aegis-daemon`,
-  owner trinity). **Pour pousser la version à jour dans le service** :
-  `sudo ./packaging/install.sh && sudo systemctl restart aegis`.
-- UI : `cd ui && WEBKIT_DISABLE_DMABUF_RENDERER=1 bun run tauri dev` (fenêtre Tauri),
-  ou `bun run dev` + http://localhost:1420 (navigateur). Se connecte au WS du daemon.
+- Service systemd `aegis` actif (fanotify réel, boot). Binaire **à redéployer** (cf. ci-dessus).
+- **App empaquetée AppImage** (`~/.local/bin/Aegis.AppImage`), bouclier **SysTray**
+  (vert protégé / rouge menace), clic→dashboard, close-to-tray. Autostart `--hidden` au login.
+  Rebuild : `cd ui && bun run bundle` (NO_STRIP requis — strip linuxdeploy trop vieux pour `.relr.dyn`).
+  Intégration OS sans root : `packaging/install-ui.sh`.
+- **Écran blanc RÉSOLU** : webkit2gtk+Wayland → `WEBKIT_DISABLE_DMABUF_RENDERER=1`
+  (+ `WEBKIT_DISABLE_COMPOSITING_MODE=1`) injecté dans les `.desktop` (le lanceur ne
+  porte pas l'env du shell). Validé : Chris a pu ouvrir le dashboard.
 
-**Bloquant UI connu (non résolu) :** `tauri dev` compile OK mais la fenêtre crashe
-sur `Gdk Error 71 dispatching to Wayland display` (WebKitGTK + Wayland). Contournement
-à tester : `WEBKIT_DISABLE_DMABUF_RENDERER=1` (+ `GDK_BACKEND=x11` au besoin). Si ça
-persiste, fallback navigateur (`bun run dev`) fonctionne. **À trancher next session.**
+**Livré cette session :**
+- **Panel quarantaine** (UI) : liste / restaure / supprime (confirm 2 temps, refresh auto). Validé E2E.
+- **Banc red-team** `tests/redteam/pentest.sh` (root) : 4 vecteurs réels + 3 non couverts (eBPF). À lancer par Chris.
+- **Lot A — réponse graduée interactive** (backend, commité a21525d, tests 7/7) :
+  Medium en Detection → **Defer** (laisser passer + notifier + file d'attente, plus de
+  quarantaine auto silencieuse) ; PrivilegeEscalation+Impact forcés Prevention (bloqués) ;
+  High/Critical inchangés (auto-quarantine conservée). `ExclusionStore` (allowlist
+  path/process persistée) + `PendingStore` (file persistée). Un process exclu
+  court-circuite toute détection en tête de pipeline. Commandes : AddExclusion/
+  RemoveExclusion (fonctionnels), ListExclusions, ListPending, DismissPending.
 
 **Prochaines étapes (par priorité) :**
-1. **Débloquer la fenêtre Tauri sous Wayland** (env vars ci-dessus) — sinon valider
-   l'UI en navigateur et acter le fallback.
-2. **Chantier eBPF (Lot 3 tranche 3)** — LE gros morceau restant : sondes aya
-   (mmap W+X fileless, capset/setuid escalade, socket_connect C2). Crate eBPF nightly
-   `crates/aegis-probes-ebpf` (déjà prévu exclu du workspace). Mérite sa propre session.
-3. **Dette canaris** : `deploy_canaries` doit `chown` vers l'utilisateur réel (sinon
-   canaris root dans le home en prod). `scripts/clean-canaries.sh` pour le ménage.
-4. Auto-protection daemon (T1562.001), feed YARA externe, cache LRU hash, commandes
-   ScanOnDemand/ScanMemory/exclusions (stubs), corrélation + rafale/entropie ransomware.
+1. **Redéployer le daemon** (action ci-dessus) — débloque le panel quarantaine + Lot A.
+2. **Lot B — UI du modèle interactif** (PAS commencé, périmètre validé avec Chris) :
+   panneau « décisions en attente » (chaque medium listé → boutons quarantaine / kill /
+   **autoriser**) + panneau exceptions (liste / suppression). « Autoriser » = AddExclusion
+   par `exe_path`. À valider E2E avec une vraie menace medium qui remonte.
+3. **Lot C** : notifications natives (toast système sur détection).
+4. **Chantier eBPF (Lot 3 tranche 3)** — BLOQUÉ outillage (ni rustup/nightly/bpf-linker ;
+   Rust = Arch stable 1.96). Réinstaller toolchain avant. Fera passer les 3 vecteurs
+   « non couverts » du banc au vert. Mérite sa propre session.
+5. Toggle Detection/Prevention dans l'UI (le daemon doit pousser son mode courant à la
+   connexion, sinon le toggle ment après reconnexion). Auto-protection daemon (T1562.001).
 
 ---
 
