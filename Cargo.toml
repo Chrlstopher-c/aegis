@@ -10,7 +10,7 @@ members = [
 # Le programme eBPF vit dans crates/aegis-probes-ebpf (cible bpfel-unknown-none,
 # nightly + bpf-linker) et est exclu du workspace : il casserait `cargo build`
 # global. aegis-probes (loader/fanotify, userspace) compile sur stable.
-exclude = ["crates/aegis-probes-ebpf"]
+exclude = ["crates/aegis-probes-ebpf", "ui/src-tauri"]
 
 [workspace.package]
 version = "0.1.0"
