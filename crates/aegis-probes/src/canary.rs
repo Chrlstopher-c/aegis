@@ -4,8 +4,9 @@
 //! qui parcourt les fichiers (préfixes en début/fin d'ordre alphabétique).
 
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
+use nix::unistd::{chown, Gid, Uid, User};
 use tracing::{info, warn};
 
 /// Noms de canaris déposés dans chaque zone. Préfixes `0000`/`zzzz` pour être
@@ -21,6 +22,7 @@ const CANARY_CONTENT: &[u8] = b"AEGIS-CANARY - ne pas modifier. Toute ecriture d
 /// créés (à marquer ensuite en fanotify). Best-effort : une zone inaccessible est
 /// ignorée avec un warn, pas une erreur fatale.
 pub fn deploy(zones: &[PathBuf]) -> Vec<PathBuf> {
+    let owner = invoking_owner();
     let mut deployed = Vec::new();
     for zone in zones {
         if let Err(err) = fs::create_dir_all(zone) {
@@ -30,13 +32,35 @@ pub fn deploy(zones: &[PathBuf]) -> Vec<PathBuf> {
         for name in CANARY_NAMES {
             let path = zone.join(name);
             match fs::write(&path, CANARY_CONTENT) {
-                Ok(()) => deployed.push(path),
+                Ok(()) => {
+                    reassign_owner(&path, owner);
+                    deployed.push(path);
+                }
                 Err(err) => warn!(path = %path.display(), %err, "dépôt de canari échoué"),
             }
         }
     }
     info!(count = deployed.len(), "canaris déployés");
     deployed
+}
+
+/// uid/gid de l'utilisateur réel derrière `sudo`/systemd. `None` si on tourne déjà
+/// sous l'utilisateur cible (les fichiers lui appartiennent alors d'office).
+fn invoking_owner() -> Option<(Uid, Gid)> {
+    let user = std::env::var("SUDO_USER").ok()?;
+    match User::from_name(&user) {
+        Ok(Some(u)) => Some((u.uid, u.gid)),
+        _ => None,
+    }
+}
+
+/// Rend un canari déposé en root à son propriétaire réel, sinon il pollue le home
+/// en root sous systemd. Best-effort : un échec de `chown` n'invalide pas le canari.
+fn reassign_owner(path: &Path, owner: Option<(Uid, Gid)>) {
+    let Some((uid, gid)) = owner else { return };
+    if let Err(err) = chown(path, Some(uid), Some(gid)) {
+        warn!(path = %path.display(), %err, "chown canari échoué");
+    }
 }
 
 /// Zones canari par défaut. Surchargées par `AEGIS_CANARY_DIRS` (séparées par `:`).
