@@ -23,9 +23,10 @@ ReadWritePaths=/var/lib/aegis
 StateDirectory=aegis
 ProtectKernelTunables=true
 ProtectControlGroups=true
-RestrictNamespaces=true
 RestrictSUIDSGID=true
-MemoryDenyWriteExecute=true
+# NB: pas de MemoryDenyWriteExecute ni RestrictNamespaces — yara-x embarque
+# wasmtime (JIT WASM) qui doit mapper de la mémoire W+X ; ces durcissements
+# font planter le moteur de signatures au démarrage.
 
 Restart=on-failure
 RestartSec=2

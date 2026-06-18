@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
     init_tracing();
     info!(
         schema_version = aegis_core::SCHEMA_VERSION,
-        "aegis-daemon démarré (Lot 4 — capteurs + détection + bridge UI)"
+        "aegis-daemon démarré"
     );
 
     // Bus de diffusion (événements + verdicts) vers les clients (socket + WS).
