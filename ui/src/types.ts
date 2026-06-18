@@ -69,7 +69,18 @@ export type StreamMessage =
 export type Command =
   | { Quarantine: { path: string } }
   | { Restore: { quarantine_id: string } }
+  | "ListQuarantine"
+  | { PurgeQuarantine: { quarantine_id: string } }
   | { KillProcess: { pid: number } };
+
+// Entrée du store de quarantaine (miroir de QuarantineEntry, aegis-response).
+export interface QuarantineEntry {
+  id: string;
+  original_path: string;
+  original_mode: number;
+  quarantined_at_ns: number;
+  reason: string;
+}
 
 export interface CommandResult {
   ok: boolean;

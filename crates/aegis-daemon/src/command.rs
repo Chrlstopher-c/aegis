@@ -35,6 +35,17 @@ pub fn handle(cmd: Command, policy: &Arc<PolicyEngine>, quarantine: &Arc<Quarant
             Ok(_) => ok(),
             Err(err) => err_result(err.to_string()),
         },
+        Command::ListQuarantine => match quarantine.list() {
+            Ok(entries) => match serde_json::to_value(&entries) {
+                Ok(data) => ok_with(data),
+                Err(err) => err_result(err.to_string()),
+            },
+            Err(err) => err_result(err.to_string()),
+        },
+        Command::PurgeQuarantine { quarantine_id } => match quarantine.purge(&quarantine_id) {
+            Ok(()) => ok(),
+            Err(err) => err_result(err.to_string()),
+        },
         other => {
             warn!(?other, "commande non encore implémentée");
             err_result("commande non implémentée".into())

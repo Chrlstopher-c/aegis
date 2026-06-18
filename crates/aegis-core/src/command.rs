@@ -34,6 +34,10 @@ pub enum Command {
     ScanMemory { pid: u32 },
     Quarantine { path: String },
     Restore { quarantine_id: String },
+    /// Liste les entrées actuellement en quarantaine (réponse dans `data`).
+    ListQuarantine,
+    /// Supprime définitivement une entrée de quarantaine (destructif, manuel).
+    PurgeQuarantine { quarantine_id: String },
     KillProcess { pid: u32 },
     AddExclusion { kind: ExclusionKind, value: String, reason: String },
     RemoveExclusion { id: String },

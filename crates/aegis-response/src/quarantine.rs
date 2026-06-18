@@ -85,6 +85,21 @@ impl Quarantine {
         Ok(entry)
     }
 
+    /// Supprime définitivement une entrée de quarantaine (blob + métadonnées).
+    /// Action destructive volontaire : ne porte que sur un fichier déjà isolé,
+    /// jamais déclenchée automatiquement (toujours sur demande explicite UI).
+    pub fn purge(&self, id: &str) -> Result<(), QuarantineError> {
+        let meta_path = self.dir.join(format!("{id}.json"));
+        if !meta_path.exists() {
+            return Err(QuarantineError::NotFound(id.to_string()));
+        }
+        let blob = self.dir.join(format!("{id}.bin"));
+        let _ = fs::remove_file(&blob);
+        fs::remove_file(&meta_path)?;
+        info!(id, "entrée de quarantaine supprimée définitivement");
+        Ok(())
+    }
+
     /// Liste les entrées actuellement en quarantaine.
     pub fn list(&self) -> Result<Vec<QuarantineEntry>, QuarantineError> {
         let mut entries = Vec::new();

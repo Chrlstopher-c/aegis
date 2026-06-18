@@ -64,7 +64,11 @@ réponse. Chaque phase a un livrable validé avant d'enchaîner.
 - [x] Bridge WebSocket daemon ↔ UI (`ws_bridge.rs`, 127.0.0.1:8787, StreamMessage JSON)
 - [x] Dashboard React dark épuré : flux live, état protection, détections (sévérité/MITRE)
 - [x] Contrôles UI→daemon : quarantaine + kill par détection (WS, `recommended_action`) — validé E2E
-- [ ] Contrôles UI restants : restauration, exclusions, toggle détection ⇄ prévention
+- [x] Panel quarantaine UI : liste/restaure/supprime (ListQuarantine + PurgeQuarantine,
+      confirm 2 temps, refresh auto) — validé E2E. **Auto-quarantine déjà active (policy), aucun auto-delete.**
+- [x] Banc red-team complet `tests/redteam/pentest.sh` : 4 vecteurs réels (exec /tmp, EICAR+quarantaine,
+      ransomware kill, FIM credentials) + 3 marqués non couverts (eBPF). Rapport ✅/❌ agrégé.
+- [ ] Contrôles UI restants : exclusions, toggle détection ⇄ prévention
 - [x] Empaquetage Tauri : AppImage + SysTray (bouclier, statut vert/rouge, clic→dashboard,
       close-to-tray) + intégration OS (`install-ui.sh` : .desktop + autostart `--hidden` + icône hicolor).
       Build : `bun run bundle` (NO_STRIP requis — strip de linuxdeploy trop vieux pour `.relr.dyn`)

@@ -67,14 +67,16 @@ aegis/
 │   ├── usePersistentState.ts        # hook état persisté localStorage (préférences UI)
 │   ├── useTrayStatus.ts             # reflète statut protection dans l'icône tray (vert/rouge)
 │   └── components/                  # ProtectionHeader, VerdictList, VerdictCard,
-│                                    #   EventFeed, eventAggregate, verdictActions, severity
+│                                    #   EventFeed, eventAggregate, verdictActions, severity,
+│                                    #   QuarantinePanel (liste/restaure/supprime)
 ├── rules/
 │   └── test.yar                     # règles EICAR + reverse-shell (convention meta)
 ├── tests/redteam/
 │   ├── lot1-exec-flux.sh            # validation flux exec temps réel (root)
 │   ├── lot2-eicar-quarantine.sh     # validation détection + quarantaine (root)
 │   ├── lot3-ransomware-kill.sh      # validation ransomware tué avant propagation (root)
-│   └── lot5-credential-fim.sh       # validation FIM credential access (root)
+│   ├── lot5-credential-fim.sh       # validation FIM credential access (root)
+│   └── pentest.sh                   # banc red-team complet : tous vecteurs + rapport ✅/❌ (root)
 ├── ui/                              # Tauri v2 + React/TS/Tailwind v4 dark
 │   ├── vite.config.ts               # plugins react + tailwindcss
 │   └── src/

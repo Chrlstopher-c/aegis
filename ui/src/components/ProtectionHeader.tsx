@@ -3,6 +3,7 @@ import type { ConnectionState } from "../useAegisStream";
 interface Props {
   status: ConnectionState;
   threatCount: number;
+  onOpenQuarantine: () => void;
 }
 
 const STATUS_LABEL: Record<ConnectionState, string> = {
@@ -17,7 +18,7 @@ const STATUS_DOT: Record<ConnectionState, string> = {
   offline: "bg-red-500",
 };
 
-export function ProtectionHeader({ status, threatCount }: Props) {
+export function ProtectionHeader({ status, threatCount, onOpenQuarantine }: Props) {
   return (
     <header className="flex items-center justify-between border-b border-neutral-800 px-6 py-4">
       <div className="flex items-center gap-3">
@@ -30,11 +31,18 @@ export function ProtectionHeader({ status, threatCount }: Props) {
           <span className="text-sm text-neutral-300">{STATUS_LABEL[status]}</span>
         </div>
       </div>
-      <div className="flex items-baseline gap-2">
-        <span className="text-2xl font-semibold tabular-nums">{threatCount}</span>
-        <span className="text-xs uppercase tracking-wider text-neutral-500">
-          détections
-        </span>
+      <div className="flex items-center gap-5">
+        <button
+          type="button"
+          onClick={onOpenQuarantine}
+          className="rounded-md border border-neutral-800 px-3 py-1.5 text-xs font-medium text-neutral-300 hover:border-neutral-700 hover:bg-neutral-900 hover:text-neutral-100"
+        >
+          Quarantaine
+        </button>
+        <div className="flex items-baseline gap-2">
+          <span className="text-2xl font-semibold tabular-nums">{threatCount}</span>
+          <span className="text-xs uppercase tracking-wider text-neutral-500">détections</span>
+        </div>
       </div>
     </header>
   );
