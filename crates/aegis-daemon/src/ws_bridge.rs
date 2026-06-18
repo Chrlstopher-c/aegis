@@ -6,7 +6,7 @@
 use std::sync::Arc;
 
 use aegis_core::{Command, StreamMessage};
-use aegis_response::Quarantine;
+use aegis_response::{ExclusionStore, PendingStore, Quarantine};
 use anyhow::{Context, Result};
 use futures_util::{SinkExt, StreamExt};
 use tokio::net::{TcpListener, TcpStream};
@@ -26,6 +26,8 @@ fn ws_addr() -> String {
 pub struct Control {
     pub policy: Arc<PolicyEngine>,
     pub quarantine: Arc<Quarantine>,
+    pub exclusions: Arc<ExclusionStore>,
+    pub pending: Arc<PendingStore>,
 }
 
 /// Lance le bridge WebSocket et sert chaque client (flux sortant + commandes).
@@ -84,7 +86,7 @@ async fn serve_client(
 
 fn dispatch_command(text: &str, control: &Control) -> aegis_core::CommandResult {
     match serde_json::from_str::<Command>(text) {
-        Ok(cmd) => crate::command::handle(cmd, &control.policy, &control.quarantine),
+        Ok(cmd) => crate::command::handle(cmd, &control),
         Err(err) => aegis_core::CommandResult {
             ok: false,
             error: Some(format!("commande illisible : {err}")),

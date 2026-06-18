@@ -10,12 +10,14 @@ use std::thread;
 use aegis_detection::YaraEngine;
 use tracing::{info, warn};
 
-use crate::enforce::Enforcer;
+use crate::enforce::{Enforcer, Subject};
 
-/// Requête de scan : fichier à analyser + identifiant de l'événement déclencheur.
+/// Requête de scan : fichier à analyser + identifiant de l'événement déclencheur
+/// + contexte du process (pour une éventuelle décision différée).
 pub struct ScanRequest {
     pub path: String,
     pub event_id: u128,
+    pub subject: Subject,
 }
 
 /// Démarre le thread de scan et retourne le canal d'émission des requêtes.
@@ -34,7 +36,7 @@ fn run(rx: Receiver<ScanRequest>, engine: YaraEngine, enforcer: Enforcer) {
         match engine.scan_file(&req.path, req.event_id) {
             Ok(verdicts) => {
                 for verdict in verdicts {
-                    enforcer.handle(&verdict);
+                    enforcer.handle(&verdict, &req.subject);
                 }
             }
             Err(err) => warn!(path = %req.path, %err, "scan YARA échoué"),
@@ -42,14 +44,19 @@ fn run(rx: Receiver<ScanRequest>, engine: YaraEngine, enforcer: Enforcer) {
     }
 }
 
-/// Emplacement du store de quarantaine (root → `/var/lib/aegis`, sinon repli).
-pub fn quarantine_dir() -> PathBuf {
+/// Répertoire de données du daemon (root → `/var/lib/aegis`, sinon repli XDG).
+pub fn data_dir() -> PathBuf {
     // SAFETY: geteuid est toujours sûr.
     if unsafe { libc::geteuid() } == 0 {
-        return PathBuf::from("/var/lib/aegis/quarantine");
+        return PathBuf::from("/var/lib/aegis");
     }
     std::env::var_os("XDG_DATA_HOME")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("/tmp"))
-        .join("aegis/quarantine")
+        .join("aegis")
+}
+
+/// Emplacement du store de quarantaine.
+pub fn quarantine_dir() -> PathBuf {
+    data_dir().join("quarantine")
 }

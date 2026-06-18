@@ -17,7 +17,7 @@ use std::sync::Arc;
 
 use aegis_core::{EventEnvelope, StreamMessage};
 use aegis_detection::{CanaryWatch, YaraEngine};
-use aegis_response::Quarantine;
+use aegis_response::{ExclusionStore, PendingStore, Quarantine};
 use anyhow::{Context, Result};
 use tokio::sync::{broadcast, mpsc};
 use tracing::{error, info};
@@ -50,12 +50,21 @@ async fn main() -> Result<()> {
     // Bus de diffusion (événements + verdicts) vers les clients (socket + WS).
     let (bus_tx, _) = broadcast::channel::<StreamMessage>(1024);
 
-    // Policy engine (réponse graduée) + store de quarantaine + enforcer partagé.
+    // Policy engine (réponse graduée) + stores (quarantaine, exclusions, file
+    // d'attente) + enforcer partagé.
     let policy = Arc::new(PolicyEngine::with_defaults());
     let quarantine = Arc::new(
         Quarantine::open(scan::quarantine_dir()).context("ouverture du store de quarantaine")?,
     );
-    let enforcer = Enforcer::new(policy.clone(), quarantine.clone(), bus_tx.clone());
+    let exclusions = Arc::new(
+        ExclusionStore::open(scan::data_dir().join("exclusions.json"))
+            .context("ouverture du store d'exclusions")?,
+    );
+    let pending = Arc::new(
+        PendingStore::open(scan::data_dir().join("pending.json"))
+            .context("ouverture de la file de décisions en attente")?,
+    );
+    let enforcer = Enforcer::new(policy.clone(), quarantine.clone(), pending.clone(), bus_tx.clone());
 
     // Moteur de signatures + thread de scan (délègue ses verdicts à l'enforcer).
     let engine = YaraEngine::from_dir(rules_dir())
@@ -83,7 +92,12 @@ async fn main() -> Result<()> {
         }
     });
     let ws_bus = bus_tx.clone();
-    let control = ws_bridge::Control { policy: policy.clone(), quarantine: quarantine.clone() };
+    let control = ws_bridge::Control {
+        policy: policy.clone(),
+        quarantine: quarantine.clone(),
+        exclusions: exclusions.clone(),
+        pending: pending.clone(),
+    };
     tokio::spawn(async move {
         if let Err(err) = ws_bridge::serve(ws_bus, control).await {
             error!(%err, "bridge WebSocket arrêté");
@@ -99,7 +113,7 @@ async fn main() -> Result<()> {
 
     // Ingestion en tâche ; le daemon vit jusqu'à un signal d'arrêt (et survit au
     // mode dégradé où l'ingestion se termine faute de capteurs).
-    tokio::spawn(pipeline::ingest(event_rx, bus_tx, scan_tx, canary_watch, enforcer));
+    tokio::spawn(pipeline::ingest(event_rx, bus_tx, scan_tx, canary_watch, enforcer, exclusions.clone()));
 
     tokio::signal::ctrl_c().await.ok();
     info!("signal d'arrêt reçu, arrêt du daemon");

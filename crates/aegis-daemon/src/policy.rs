@@ -15,6 +15,9 @@ pub enum Decision {
     Log,
     /// Notifier l'utilisateur (et journaliser).
     Notify,
+    /// Laisser passer (ne pas bloquer) mais notifier et inscrire en file de
+    /// décisions en attente : l'utilisateur arbitrera (quarantaine/kill/autoriser).
+    Defer,
     /// Mettre le fichier en quarantaine.
     Quarantine { path: String },
     /// Geler le process (investigation) sans le tuer.
@@ -31,11 +34,13 @@ pub struct PolicyEngine {
 }
 
 impl PolicyEngine {
-    /// Policy par défaut livrée : Detection global, sauf Impact (ransomware) en
-    /// Prevention — trop rapide pour une validation humaine.
+    /// Policy par défaut livrée : Detection global, sauf Impact (ransomware) et
+    /// PrivilegeEscalation en Prevention — trop dangereux pour laisser passer en
+    /// attente d'un arbitrage humain (cf. choix produit : privesc = on bloque).
     pub fn with_defaults() -> Self {
         let mut by_category = HashMap::new();
         by_category.insert(ThreatCategory::Impact, ProtectionMode::Prevention);
+        by_category.insert(ThreatCategory::PrivilegeEscalation, ProtectionMode::Prevention);
         Self {
             global: RwLock::new(ProtectionMode::Detection),
             by_category: RwLock::new(by_category),
@@ -70,7 +75,11 @@ impl PolicyEngine {
         match (verdict.severity, mode) {
             (Severity::Info, _) => Decision::Log,
             (Severity::Low, _) => Decision::Notify,
-            (Severity::Medium, _) => quarantine_or_notify(verdict),
+            // Sévérité moyenne en observation : on ne bloque pas, on laisse passer
+            // et on défère l'arbitrage à l'utilisateur (choix produit).
+            (Severity::Medium, ProtectionMode::Detection) => Decision::Defer,
+            // En prévention (ou catégorie forcée : privesc, impact), on gèle/isole.
+            (Severity::Medium, ProtectionMode::Prevention) => isolate_or_quarantine(verdict),
             (Severity::High, ProtectionMode::Detection) => quarantine_or_notify(verdict),
             (Severity::High, ProtectionMode::Prevention) => isolate_or_quarantine(verdict),
             (Severity::Critical, ProtectionMode::Detection) => Decision::Notify,
@@ -145,6 +154,22 @@ mod tests {
         policy.set_global(ProtectionMode::Prevention);
         let v = verdict(Severity::Critical, ThreatCategory::CommandAndControl, Action::Kill { pid: 7 });
         assert_eq!(policy.decide(&v), Decision::Kill { pid: 7 });
+    }
+
+    #[test]
+    fn medium_en_detection_est_defere() {
+        // Sévérité moyenne en Detection : laisser passer + arbitrage utilisateur.
+        let policy = PolicyEngine::with_defaults();
+        let v = verdict(Severity::Medium, ThreatCategory::CredentialAccess, Action::Notify);
+        assert_eq!(policy.decide(&v), Decision::Defer);
+    }
+
+    #[test]
+    fn medium_privilege_escalation_est_isole() {
+        // Privesc forcé en Prevention par défaut → on gèle même en sévérité moyenne.
+        let policy = PolicyEngine::with_defaults();
+        let v = verdict(Severity::Medium, ThreatCategory::PrivilegeEscalation, Action::Kill { pid: 9 });
+        assert_eq!(policy.decide(&v), Decision::Isolate { pid: 9 });
     }
 
     #[test]

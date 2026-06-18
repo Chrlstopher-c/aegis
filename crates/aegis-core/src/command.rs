@@ -41,6 +41,12 @@ pub enum Command {
     KillProcess { pid: u32 },
     AddExclusion { kind: ExclusionKind, value: String, reason: String },
     RemoveExclusion { id: String },
+    /// Liste les exclusions (allowlist) actuelles (réponse dans `data`).
+    ListExclusions,
+    /// Liste les décisions en attente d'arbitrage (réponse dans `data`).
+    ListPending,
+    /// Retire une décision en attente une fois arbitrée.
+    DismissPending { pending_id: String },
     /// Feedback faux positif → exclusion suggérée.
     AckVerdict { event_id: u128 },
 }
