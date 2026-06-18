@@ -1,6 +1,10 @@
 //! Moteurs de détection. Consomment des `EventEnvelope`, produisent des
 //! `Verdict`. Aucune action n'est appliquée ici (frontière `detection` → jamais
-//! `response`). YARA, comportemental et corrélation arriveront au Lot 2/3.
+//! `response`). YARA (Lot 2) ; comportemental et corrélation au Lot 3.
+
+mod yara;
+
+pub use yara::{YaraEngine, YaraError};
 
 use aegis_core::{EventEnvelope, Verdict};
 

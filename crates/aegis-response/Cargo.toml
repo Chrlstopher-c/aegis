@@ -9,3 +9,6 @@ description = "Application des actions : quarantaine, kill, isolation. Ne détec
 aegis-core = { path = "../aegis-core" }
 tracing.workspace = true
 thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+ulid.workspace = true

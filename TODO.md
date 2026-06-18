@@ -32,11 +32,12 @@ réponse. Chaque phase a un livrable validé avant d'enchaîner.
 - [x] Livrable : flux temps réel des exec en logs — **validé E2E** (exec /tmp capté)
 
 ### Phase 2 — Moteur de détection signature
-- [ ] Intégration YARA natif (`yara-rust`)
-- [ ] Scan on-access (déclenché par fanotify), on-demand, planifié
-- [ ] Scan mémoire (YARA sur process en RAM) → fileless
-- [ ] Quarantaine : isolation + métadonnées + restauration
-- [ ] Livrable : EICAR + règle YARA détecté et mis en quarantaine en temps réel
+- [x] Intégration YARA natif (**yara-x 0.11**, pas yara-rust : pur Rust)
+- [x] Scan on-access (déclenché par fanotify, zone chaude) + scan_file/scan_bytes ; planifié à venir
+- [x] Scan mémoire : `scan_bytes` prêt (câblage `/proc/<pid>/mem` au Lot 3)
+- [x] Quarantaine : isolation + métadonnées JSON + restauration (round-trip testé)
+- [x] Livrable : EICAR + règle YARA détecté et mis en quarantaine en temps réel — **validé E2E**
+- [ ] Cache LRU des hash (éviter re-scans) — prévu plan
 
 ### Phase 3 — Détection comportementale
 - [ ] Règles eBPF : escalade privilèges, reverse shell, persistance (cron/systemd/LD_PRELOAD)

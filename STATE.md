@@ -42,13 +42,29 @@ compile. Pré-vol environnement passé sans bloquant majeur.
 - **Validé E2E en root** (`tests/redteam/lot1-exec-flux.sh`) : exec depuis `/tmp`
   capté en temps réel dans le flux. `cargo build` + `cargo clippy --workspace` clean.
 
-**Reste du Lot 1 (optionnel, contexte enrichi) :** sonde **eBPF exec** via aya
-(`aegis-probes-ebpf`, cible bpf, nightly) pour cgroup réel + caps au plus près du
-`bprm_check`. Non bloquant pour avancer : fanotify couvre déjà le livrable exec.
+**Lot 2 (Moteur signatures + quarantaine) — DONE et validé E2E temps réel :**
+- `aegis-detection` : moteur **yara-x 0.11** (`YaraEngine::from_dir` compile `rules/`
+  récursif, `scan_file`/`scan_bytes`). Métadonnées de règle (severity/category/mitre/
+  description) → `Verdict`. Règles `rules/test.yar` (EICAR + reverse-shell oneliner).
+- `aegis-response` : **quarantaine** (`Quarantine`) — déplacement vers store
+  (`/var/lib/aegis/quarantine` root, repli `$XDG_DATA_HOME`), blob en `0o600` (perte
+  du bit exec), métadonnées JSON (`<id>.bin`+`<id>.json`), restauration mode+contenu.
+- `aegis-daemon` : **filtrage par zone** (`zones.rs`) — ne traite/scanne que les exec
+  en zone inscriptible (`/tmp`,`/dev/shm`,`/home`,`/root`,`/var/tmp`,`/run/user`),
+  ignore le bruit système (`/usr`,`/lib`,`/bin`…). **Thread de scan YARA dédié**
+  (`scan.rs`, hors chemin bloquant kernel) : sur match ≥ High → quarantaine auto
+  (signature = certitude, même en mode detection).
+- **Validé** : unit/intégration (EICAR, fichier sain, quarantaine round-trip, zones) +
+  **E2E root** (`tests/redteam/lot2-eicar-quarantine.sh`) : EICAR /tmp détecté +
+  quarantiné en ~1 ms. `cargo build` + `clippy --workspace` clean.
 
-**Prochaine étape : Lot 2** — `aegis-detection` yara-x (scan on-access déclenché
-par fanotify + on-demand), `aegis-response` quarantaine. Livrable : EICAR détecté
-et mis en quarantaine en temps réel. Tests root.
+**Dette / reste à faire (post cible-session) :**
+- Sonde **eBPF exec** via aya (cgroup réel, caps près du `bprm_check`) — enrichissement.
+- Cache LRU des hash (éviter re-scans) — prévu plan, pas encore implémenté.
+- **Lot 4 (UI branchée)** : pont WebSocket daemon↔UI, dashboard flux live. L'UI est
+  encore une page dark non connectée. C'est le prochain gros morceau visible.
+- **Lot 3** : comportemental (eBPF mmap/capset/connect), corrélation, anti-ransomware.
+- Note : le store `/var/lib/aegis/quarantine` contient un EICAR de test (inoffensif).
 
 **Conception produit complète** (pas seulement MVP), corpus dans `docs/` (index
 `docs/README.md`) :

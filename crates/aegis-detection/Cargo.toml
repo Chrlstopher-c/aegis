@@ -10,3 +10,4 @@ aegis-core = { path = "../aegis-core" }
 serde.workspace = true
 tracing.workspace = true
 thiserror.workspace = true
+yara-x = "0.11"

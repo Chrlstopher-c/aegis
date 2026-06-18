@@ -1,17 +1,7 @@
-//! Application des actions décidées par le daemon (quarantaine, kill, isolation,
-//! restauration). Ne détecte rien : reçoit une `Action` et l'exécute. Implémenté
-//! au Lot 2 (quarantaine) puis Lot 3/5 (kill, isolation graduée).
+//! Application des actions décidées par le daemon. Ne détecte rien : reçoit une
+//! `Action` (ou une commande directe) et l'exécute. Lot 2 : quarantaine +
+//! restauration. Kill/isolation graduée au Lot 3/5.
 
-use aegis_core::Action;
+mod quarantine;
 
-/// Erreur lors de l'application d'une action de réponse.
-#[derive(Debug, thiserror::Error)]
-pub enum ResponseError {
-    #[error("action non encore implémentée : {0:?}")]
-    NotImplemented(Action),
-}
-
-/// Applique une action de réponse. Stub : sera câblé au Lot 2.
-pub fn apply(action: Action) -> Result<(), ResponseError> {
-    Err(ResponseError::NotImplemented(action))
-}
+pub use quarantine::{Quarantine, QuarantineEntry, QuarantineError};

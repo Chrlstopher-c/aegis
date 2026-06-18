@@ -18,15 +18,37 @@ aegis/
 │   │       ├── events.rs            # EventEnvelope, EventSource, 5 payloads
 │   │       ├── verdict.rs           # Verdict, Engine, Severity, ThreatCategory, Action
 │   │       └── command.rs           # Command, CommandResult, Mode/Exclusion enums
-│   ├── aegis-detection/             # moteurs de verdict (stub : trait DetectionEngine)
+│   ├── aegis-probes/                # capteurs bas niveau (fanotify)
 │   │   ├── Cargo.toml
-│   │   └── src/lib.rs
-│   ├── aegis-response/              # application des actions (stub : apply())
+│   │   └── src/
+│   │       ├── lib.rs               # exports (spawn_fanotify)
+│   │       ├── fanotify.rs          # sonde FAN_OPEN_EXEC_PERM, acquittement batch
+│   │       └── proc.rs              # enrichissement ProcessCtx via /proc
+│   ├── aegis-detection/             # moteurs de verdict
 │   │   ├── Cargo.toml
-│   │   └── src/lib.rs
+│   │   ├── src/
+│   │   │   ├── lib.rs               # trait DetectionEngine + exports YARA
+│   │   │   └── yara.rs              # YaraEngine (yara-x) : compile rules/, scan→Verdict
+│   │   └── tests/eicar.rs           # détection EICAR + fichier sain
+│   ├── aegis-response/              # application des actions
+│   │   ├── Cargo.toml
+│   │   ├── src/
+│   │   │   ├── lib.rs               # exports Quarantine
+│   │   │   └── quarantine.rs        # store quarantaine + restauration
+│   │   └── tests/quarantine.rs      # round-trip quarantine/restore
 │   └── aegis-daemon/                # orchestrateur (binaire tokio + tracing)
 │       ├── Cargo.toml
-│       └── src/main.rs
+│       └── src/
+│           ├── main.rs              # câblage pipeline + moteur YARA + quarantaine
+│           ├── pipeline.rs          # ingestion, filtrage zone, déclenchement scan
+│           ├── ipc_socket.rs        # socket Unix, diffusion JSON du flux
+│           ├── scan.rs              # thread scan YARA + quarantaine auto ≥ High
+│           └── zones.rs             # classification zone chaude/froide (anti-bruit)
+├── rules/
+│   └── test.yar                     # règles EICAR + reverse-shell (convention meta)
+├── tests/redteam/
+│   ├── lot1-exec-flux.sh            # validation flux exec temps réel (root)
+│   └── lot2-eicar-quarantine.sh     # validation détection + quarantaine (root)
 ├── ui/                              # Tauri v2 + React/TS/Tailwind v4 dark
 │   ├── vite.config.ts               # plugins react + tailwindcss
 │   └── src/
