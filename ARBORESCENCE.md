@@ -17,6 +17,7 @@ aegis/
 │   │       ├── process.rs           # ProcessCtx
 │   │       ├── events.rs            # EventEnvelope, EventSource, 5 payloads
 │   │       ├── verdict.rs           # Verdict, Engine, Severity, ThreatCategory, Action
+│   │       ├── stream.rs            # StreamMessage (event|verdict) du flux UI
 │   │       └── command.rs           # Command, CommandResult, Mode/Exclusion enums
 │   ├── aegis-probes/                # capteurs bas niveau (fanotify)
 │   │   ├── Cargo.toml
@@ -42,11 +43,18 @@ aegis/
 │   └── aegis-daemon/                # orchestrateur (binaire tokio + tracing)
 │       ├── Cargo.toml
 │       └── src/
-│           ├── main.rs              # câblage pipeline + YARA + quarantaine + canaris
+│           ├── main.rs              # câblage pipeline + YARA + quarantaine + canaris + bridges
 │           ├── pipeline.rs          # ingestion, comportemental prioritaire, filtrage, scan
-│           ├── ipc_socket.rs        # socket Unix, diffusion JSON du flux
+│           ├── ipc_socket.rs        # socket Unix, diffusion JSON du flux (StreamMessage)
+│           ├── ws_bridge.rs         # bridge WebSocket localhost → UI (flux JSON)
 │           ├── scan.rs              # thread scan YARA + quarantaine auto ≥ High
+│           ├── demo.rs              # flux synthétique (--demo) pour validation UI hors root
 │           └── zones.rs             # classification zone chaude/froide (anti-bruit)
+├── ui/src/                          # dashboard React (Lot 4)
+│   ├── App.tsx                      # layout dashboard (header + détections + flux)
+│   ├── types.ts                     # miroir TS du contrat IPC (StreamMessage)
+│   ├── useAegisStream.ts            # hook WebSocket (reconnexion, buffers bornés)
+│   └── components/                  # ProtectionHeader, VerdictList, EventFeed, severity
 ├── rules/
 │   └── test.yar                     # règles EICAR + reverse-shell (convention meta)
 ├── tests/redteam/

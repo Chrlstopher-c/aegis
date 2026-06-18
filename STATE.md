@@ -77,11 +77,32 @@ au-delà du canari : N écritures/renames/T s par pid), corrélation arbre de pi
 sondes **eBPF** (mmap W+X fileless, capset/setuid escalade, socket_connect C2) via
 crate eBPF aya nightly.
 
-**Autre dette :**
-- Sonde eBPF exec (cgroup réel, caps) — enrichissement du Lot 1.
-- Cache LRU des hash (éviter re-scans YARA) — prévu plan.
-- **Lot 4 (UI branchée)** : pont WebSocket daemon↔UI, dashboard flux live. L'UI est
-  encore une page dark non connectée — prochain gros morceau visible.
+**Lot 3 tranche 2/3 (heuristiques exec) — DONE :**
+- `ExecHeuristics` (behavioral.rs) : reverse shell via cmdline (Critical/C2/T1059.004/Kill),
+  exec depuis zone inscriptible (High/Execution/T1059/Notify). Sans eBPF. Branché pipeline.
+- Tests unitaires verts.
+
+**Lot 4 (UI temps réel) — DONE et validé E2E (mode démo) :**
+- `aegis-core/stream.rs` : `StreamMessage` (enum `event`|`verdict`, tag JSON).
+- `aegis-daemon/ws_bridge.rs` : bridge **WebSocket localhost** (`127.0.0.1:8787`,
+  `AEGIS_WS_ADDR`), réexpose le flux JSON. Le bus broadcast porte désormais
+  `StreamMessage` (events + verdicts), poussé par pipeline + scan + comportemental.
+- **Mode dégradé** : si fanotify échoue (pas de root), le daemon ne meurt plus —
+  warn + UI/bridge servis. Daemon bloque sur `ctrl_c` (vrai cycle de vie).
+- **Mode `--demo`** (`demo.rs`) : flux synthétique pour valider l'UI sans privilèges.
+- UI : `useAegisStream` (hook WS, reconnexion auto, buffers bornés), dashboard React
+  dark (`ProtectionHeader`/`VerdictList`/`EventFeed`), sévérités sémantiques.
+- **Validé** : `bun run build` (tsc strict) + `cargo build`/`clippy` clean ; daemon
+  `--demo` + UI, screenshot `logs/screenshots/lot4-dashboard.png` (flux live +
+  détections codées par sévérité + badges MITRE), zéro erreur console. **Le rendu
+  visuel reste l'appel de Chris.**
+
+**Dette restante :**
+- **Lot 3 tranche 3/3** : sondes **eBPF** (mmap W+X fileless, capset/setuid, socket_connect
+  C2) via crate eBPF aya nightly — gros chantier kernel dédié. + rafale/entropie + corrélation.
+- **Lot 5** : réponse graduée, FIM, feed règles YARA, auto-protection daemon, service systemd.
+- Contrôle UI→daemon (`Command`) : le WS est lecture seule pour l'instant (prévu Lot 5).
+- Cache LRU des hash YARA. Sonde eBPF exec enrichie (cgroup/caps).
 - Note : `/var/lib/aegis/quarantine` contient un EICAR de test (inoffensif).
 
 **Conception produit complète** (pas seulement MVP), corpus dans `docs/` (index

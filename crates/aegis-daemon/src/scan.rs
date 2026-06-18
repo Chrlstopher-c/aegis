@@ -7,9 +7,10 @@ use std::path::PathBuf;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 
-use aegis_core::{Severity, Verdict};
+use aegis_core::{Severity, StreamMessage, Verdict};
 use aegis_detection::YaraEngine;
 use aegis_response::Quarantine;
+use tokio::sync::broadcast;
 use tracing::{error, info, warn};
 
 /// Requête de scan : fichier à analyser + identifiant de l'événement déclencheur.
@@ -18,23 +19,33 @@ pub struct ScanRequest {
     pub event_id: u128,
 }
 
-/// Démarre le thread de scan et retourne le canal d'émission des requêtes.
-pub fn spawn(engine: YaraEngine, quarantine: Quarantine) -> Sender<ScanRequest> {
+/// Démarre le thread de scan et retourne le canal d'émission des requêtes. Les
+/// verdicts produits sont poussés sur `bus` (UI) en plus d'être journalisés.
+pub fn spawn(
+    engine: YaraEngine,
+    quarantine: Quarantine,
+    bus: broadcast::Sender<StreamMessage>,
+) -> Sender<ScanRequest> {
     let (tx, rx) = std::sync::mpsc::channel::<ScanRequest>();
     thread::Builder::new()
         .name("aegis-yara".into())
-        .spawn(move || run(rx, engine, quarantine))
+        .spawn(move || run(rx, engine, quarantine, bus))
         .expect("démarrage du thread de scan YARA");
     tx
 }
 
-fn run(rx: Receiver<ScanRequest>, engine: YaraEngine, quarantine: Quarantine) {
+fn run(
+    rx: Receiver<ScanRequest>,
+    engine: YaraEngine,
+    quarantine: Quarantine,
+    bus: broadcast::Sender<StreamMessage>,
+) {
     info!("thread de scan YARA prêt");
     while let Ok(req) = rx.recv() {
         match engine.scan_file(&req.path, req.event_id) {
             Ok(verdicts) => {
                 for verdict in verdicts {
-                    handle_verdict(&verdict, &req.path, &quarantine);
+                    handle_verdict(&verdict, &req.path, &quarantine, &bus);
                 }
             }
             Err(err) => warn!(path = %req.path, %err, "scan YARA échoué"),
@@ -42,7 +53,12 @@ fn run(rx: Receiver<ScanRequest>, engine: YaraEngine, quarantine: Quarantine) {
     }
 }
 
-fn handle_verdict(verdict: &Verdict, path: &str, quarantine: &Quarantine) {
+fn handle_verdict(
+    verdict: &Verdict,
+    path: &str,
+    quarantine: &Quarantine,
+    bus: &broadcast::Sender<StreamMessage>,
+) {
     info!(
         engine = ?verdict.engine,
         severity = ?verdict.severity,
@@ -52,6 +68,7 @@ fn handle_verdict(verdict: &Verdict, path: &str, quarantine: &Quarantine) {
         path,
         "VERDICT"
     );
+    let _ = bus.send(StreamMessage::Verdict(verdict.clone()));
     // Signature exacte ≥ High → isolation immédiate, même en mode detection.
     if verdict.severity >= Severity::High {
         match quarantine.quarantine(path, &verdict.title) {

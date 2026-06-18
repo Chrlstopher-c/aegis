@@ -4,7 +4,7 @@
 
 use std::path::PathBuf;
 
-use aegis_core::EventEnvelope;
+use aegis_core::StreamMessage;
 use anyhow::{Context, Result};
 use tokio::io::AsyncWriteExt;
 use tokio::net::{UnixListener, UnixStream};
@@ -25,7 +25,7 @@ fn socket_path() -> PathBuf {
 }
 
 /// Lie le socket et sert chaque client connecté (lecture seule du flux).
-pub async fn serve(bus: broadcast::Sender<EventEnvelope>) -> Result<()> {
+pub async fn serve(bus: broadcast::Sender<StreamMessage>) -> Result<()> {
     let path = socket_path();
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)
@@ -49,7 +49,7 @@ pub async fn serve(bus: broadcast::Sender<EventEnvelope>) -> Result<()> {
 
 async fn serve_client(
     mut stream: UnixStream,
-    mut rx: broadcast::Receiver<EventEnvelope>,
+    mut rx: broadcast::Receiver<StreamMessage>,
 ) -> Result<()> {
     loop {
         match rx.recv().await {

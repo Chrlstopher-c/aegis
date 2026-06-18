@@ -48,11 +48,12 @@ réponse. Chaque phase a un livrable validé avant d'enchaîner.
 - [ ] Corrélation : arbre de pid + fenêtre temporelle — tranche 2
 
 ### Phase 4 — UI temps réel
-- [ ] Bridge WebSocket daemon ↔ UI
-- [ ] Dashboard React dark épuré : flux live, état protection, détections, quarantaine
-- [ ] Contrôles UI→daemon : quarantaine/restauration, exclusions, kill, toggle détection ⇄ prévention
-- [ ] Empaquetage Tauri (tray, notifications natives)
-- [ ] Livrable : render validé par Chris
+- [x] Bridge WebSocket daemon ↔ UI (`ws_bridge.rs`, 127.0.0.1:8787, StreamMessage JSON)
+- [x] Dashboard React dark épuré : flux live, état protection, détections (sévérité/MITRE)
+- [ ] Contrôles UI→daemon : quarantaine/restauration, exclusions, kill, toggle détection ⇄ prévention (Lot 5)
+- [ ] Empaquetage Tauri (tray, notifications natives) (Lot 5)
+- [x] Livrable : dashboard live validé E2E (mode démo) — **rendu visuel à valider par Chris**
+- [x] Bonus : mode dégradé (daemon survit sans capteurs) + mode `--demo`
 
 ### Phase 5 — Réponse & finition
 - [ ] Réponse graduée (alerte → isolation → kill)

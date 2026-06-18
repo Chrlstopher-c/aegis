@@ -7,11 +7,13 @@
 mod command;
 mod events;
 mod process;
+mod stream;
 mod verdict;
 
 pub use command::{Command, CommandResult, ExclusionKind, ModeScope, ProtectionMode};
 pub use events::{EventEnvelope, EventPayload, EventSource, ExecEvent, FileEvent, FileOp, MmapBacking, MmapEvent, NetEvent, NetProto, PrivEvent};
 pub use process::ProcessCtx;
+pub use stream::StreamMessage;
 pub use verdict::{Action, Engine, Severity, ThreatCategory, Verdict};
 
 /// Version du schéma IPC. Incrémentée à tout changement incompatible.
