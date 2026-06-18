@@ -12,7 +12,7 @@ mod verdict;
 
 pub use command::{Command, CommandResult, ExclusionKind, ModeScope, ProtectionMode};
 pub use events::{EventEnvelope, EventPayload, EventSource, ExecEvent, FileEvent, FileOp, MmapBacking, MmapEvent, NetEvent, NetProto, PrivEvent};
-pub use process::ProcessCtx;
+pub use process::{AppAttribution, AppKind, ProcessCtx};
 pub use stream::StreamMessage;
 pub use verdict::{Action, Engine, Severity, ThreatCategory, Verdict};
 

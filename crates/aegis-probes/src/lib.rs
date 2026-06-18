@@ -2,9 +2,12 @@
 //! Normalise les événements kernel en `EventEnvelope` (contrat `aegis-core`) et
 //! les pousse vers le daemon. Ne décide rien : ni verdict, ni action.
 
+mod attribution;
 mod canary;
 mod fanotify;
 mod proc;
+
+pub use attribution::attribute as attribute_app;
 
 pub use canary::{default_zones as default_canary_zones, deploy as deploy_canaries};
 pub use fanotify::{default_sensitive_files, spawn as spawn_fanotify, ProbeError};

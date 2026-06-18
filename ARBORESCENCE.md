@@ -14,7 +14,7 @@ aegis/
 │   │   ├── Cargo.toml
 │   │   └── src/
 │   │       ├── lib.rs               # exports + SCHEMA_VERSION
-│   │       ├── process.rs           # ProcessCtx
+│   │       ├── process.rs           # ProcessCtx + AppAttribution/AppKind
 │   │       ├── events.rs            # EventEnvelope, EventSource, 5 payloads
 │   │       ├── verdict.rs           # Verdict, Engine, Severity, ThreatCategory, Action
 │   │       ├── stream.rs            # StreamMessage (event|verdict) du flux UI
@@ -24,8 +24,9 @@ aegis/
 │   │   └── src/
 │   │       ├── lib.rs               # exports (spawn_fanotify, canaris)
 │   │       ├── fanotify.rs          # sonde exec (PERM) + canaris (MODIFY), routage par mask
-│   │       ├── canary.rs            # déploiement leurres anti-ransomware
-│   │       └── proc.rs              # enrichissement ProcessCtx via /proc
+│   │       ├── canary.rs            # déploiement leurres anti-ransomware (+ chown user réel)
+│   │       ├── attribution.rs       # attribution process → app racine (cgroup + ancêtres)
+│   │       └── proc.rs              # enrichissement ProcessCtx via /proc (+ app)
 │   ├── aegis-detection/             # moteurs de verdict
 │   │   ├── Cargo.toml
 │   │   ├── src/

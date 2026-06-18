@@ -3,8 +3,8 @@
 //! événements et des verdicts plausibles sur le bus, sans toucher au système.
 
 use aegis_core::{
-    Action, Engine, EventEnvelope, EventPayload, EventSource, FileEvent, FileOp, ProcessCtx,
-    Severity, StreamMessage, ThreatCategory, Verdict, SCHEMA_VERSION,
+    Action, AppAttribution, AppKind, Engine, EventEnvelope, EventPayload, EventSource, FileEvent,
+    FileOp, ProcessCtx, Severity, StreamMessage, ThreatCategory, Verdict, SCHEMA_VERSION,
 };
 use tokio::sync::broadcast;
 use tokio::time::{sleep, Duration};
@@ -14,8 +14,8 @@ pub async fn run(bus: broadcast::Sender<StreamMessage>) {
     let samples = sample_execs();
     let mut tick: u64 = 0;
     loop {
-        let (comm, path, pid) = &samples[(tick as usize) % samples.len()];
-        let _ = bus.send(StreamMessage::Event(make_event(*pid, comm, path)));
+        let (comm, path, pid, app) = &samples[(tick as usize) % samples.len()];
+        let _ = bus.send(StreamMessage::Event(make_event(*pid, comm, path, app.clone())));
         if tick % 5 == 4 {
             let _ = bus.send(StreamMessage::Verdict(make_verdict(tick)));
         }
@@ -24,17 +24,21 @@ pub async fn run(bus: broadcast::Sender<StreamMessage>) {
     }
 }
 
-fn sample_execs() -> Vec<(&'static str, &'static str, u32)> {
+fn sample_execs() -> Vec<(&'static str, &'static str, u32, Option<AppAttribution>)> {
     vec![
-        ("bash", "/usr/bin/bash", 1201),
-        ("curl", "/usr/bin/curl", 1318),
-        ("dropper", "/tmp/dropper", 4042),
-        ("python3", "/usr/bin/python3", 1555),
-        ("nc", "/tmp/.x/nc", 4099),
+        ("bash", "/usr/bin/bash", 1201, app("Claude Code", AppKind::Terminal, 1180)),
+        ("curl", "/usr/bin/curl", 1318, app("Discord", AppKind::Desktop, 2324)),
+        ("dropper", "/tmp/dropper", 4042, app("Chrome", AppKind::Desktop, 109254)),
+        ("python3", "/usr/bin/python3", 1555, app("Claude Code", AppKind::Terminal, 1180)),
+        ("nc", "/tmp/.x/nc", 4099, None),
     ]
 }
 
-fn make_event(pid: u32, comm: &str, path: &str) -> EventEnvelope {
+fn app(name: &str, kind: AppKind, root_pid: u32) -> Option<AppAttribution> {
+    Some(AppAttribution { name: name.into(), kind, root_pid })
+}
+
+fn make_event(pid: u32, comm: &str, path: &str, app: Option<AppAttribution>) -> EventEnvelope {
     EventEnvelope {
         schema_version: SCHEMA_VERSION,
         event_id: u128::from(pid) << 32 | u128::from(fastrand()),
@@ -53,6 +57,7 @@ fn make_event(pid: u32, comm: &str, path: &str) -> EventEnvelope {
             caps_effective: 0,
             cgroup_id: 0,
             container_id: None,
+            app,
         },
         payload: EventPayload::File(FileEvent {
             path: path.into(),

@@ -23,6 +23,7 @@ pub fn process_ctx(pid: u32, exe_hint: &str) -> ProcessCtx {
         caps_effective: status.caps_effective,
         cgroup_id: 0, // renseigné par la sonde eBPF (cgroup réel), 0 côté fanotify.
         container_id: read_container_id(pid),
+        app: crate::attribution::attribute(pid),
     }
 }
 

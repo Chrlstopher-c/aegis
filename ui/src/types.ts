@@ -13,6 +13,14 @@ export type ThreatCategory =
   | "Impact"
   | "Signature";
 
+export type AppKind = "Desktop" | "Terminal" | "Service" | "System" | "Unknown";
+
+export interface AppAttribution {
+  name: string;
+  kind: AppKind;
+  root_pid: number;
+}
+
 export interface ProcessCtx {
   pid: number;
   ppid: number;
@@ -20,6 +28,7 @@ export interface ProcessCtx {
   comm: string;
   cmdline: string;
   uid: number;
+  app?: AppAttribution;
 }
 
 export interface EventEnvelope {

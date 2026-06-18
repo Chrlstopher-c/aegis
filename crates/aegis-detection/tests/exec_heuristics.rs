@@ -25,6 +25,7 @@ fn exec_event(path: &str, cmdline: &str) -> EventEnvelope {
             caps_effective: 0,
             cgroup_id: 0,
             container_id: None,
+            app: None,
         },
         payload: EventPayload::File(FileEvent {
             path: path.into(),

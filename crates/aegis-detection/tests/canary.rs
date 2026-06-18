@@ -22,6 +22,7 @@ fn process() -> ProcessCtx {
         caps_effective: 0,
         cgroup_id: 0,
         container_id: None,
+        app: None,
     }
 }
 
