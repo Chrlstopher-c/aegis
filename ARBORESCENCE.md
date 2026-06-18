@@ -63,6 +63,7 @@ aegis/
 │   ├── App.tsx                      # layout dashboard (header + détections + flux)
 │   ├── types.ts                     # miroir TS du contrat IPC (StreamMessage, Command, Action)
 │   ├── useAegisStream.ts            # hook WebSocket (flux + sendCommand corrélé, reconnexion)
+│   ├── usePersistentState.ts        # hook état persisté localStorage (préférences UI)
 │   └── components/                  # ProtectionHeader, VerdictList, VerdictCard,
 │                                    #   EventFeed, eventAggregate, verdictActions, severity
 ├── rules/

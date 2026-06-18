@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import type { AppKind, EventEnvelope } from "../types";
+import { usePersistentState } from "../usePersistentState";
 import { aggregate, type AppGroup } from "./eventAggregate";
 
 interface Props {
@@ -74,8 +75,9 @@ function AppSection({ group, collapsed, onToggle }: SectionProps) {
 
 export function EventFeed({ events }: Props) {
   const groups = useMemo(() => aggregate(events), [events]);
-  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
-  const [showSystem, setShowSystem] = useState(false);
+  const [collapsedList, setCollapsedList] = usePersistentState<string[]>("aegis.feed.collapsed", []);
+  const [showSystem, setShowSystem] = usePersistentState<boolean>("aegis.feed.showSystem", false);
+  const collapsed = useMemo(() => new Set(collapsedList), [collapsedList]);
 
   const hiddenSystem = useMemo(
     () => groups.filter((g) => SYSTEM_KINDS.has(g.kind)).length,
@@ -84,12 +86,9 @@ export function EventFeed({ events }: Props) {
   const visible = showSystem ? groups : groups.filter((g) => !SYSTEM_KINDS.has(g.kind));
 
   const toggle = (key: string): void =>
-    setCollapsed((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+    setCollapsedList(
+      collapsed.has(key) ? collapsedList.filter((k) => k !== key) : [...collapsedList, key],
+    );
 
   return (
     <section className="flex flex-col overflow-hidden bg-neutral-950">
@@ -100,7 +99,7 @@ export function EventFeed({ events }: Props) {
         {(hiddenSystem > 0 || showSystem) && (
           <button
             type="button"
-            onClick={() => setShowSystem((v) => !v)}
+            onClick={() => setShowSystem(!showSystem)}
             className="rounded px-2 py-0.5 text-[10px] font-medium text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200"
           >
             {showSystem ? "masquer le bruit système" : `afficher le système (${hiddenSystem})`}
