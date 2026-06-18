@@ -1,11 +1,12 @@
-import type { Verdict } from "../types";
-import { SEVERITY_STYLE } from "./severity";
+import type { Command, CommandResult, Verdict } from "../types";
+import { VerdictCard } from "./VerdictCard";
 
 interface Props {
   verdicts: Verdict[];
+  sendCommand: (cmd: Command) => Promise<CommandResult>;
 }
 
-export function VerdictList({ verdicts }: Props) {
+export function VerdictList({ verdicts, sendCommand }: Props) {
   return (
     <section className="flex flex-col overflow-hidden bg-neutral-950">
       <h2 className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-neutral-500">
@@ -19,27 +20,7 @@ export function VerdictList({ verdicts }: Props) {
         ) : (
           <ul className="flex flex-col gap-2">
             {verdicts.map((v, i) => (
-              <li
-                key={`${v.event_id}-${i}`}
-                className={`rounded-lg border px-4 py-3 ${SEVERITY_STYLE[v.severity]}`}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-medium text-neutral-100">{v.title}</span>
-                  <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider">
-                    {v.severity}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-neutral-400">{v.detail}</p>
-                <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-neutral-500">
-                  <span className="rounded bg-neutral-800 px-1.5 py-0.5">{v.engine}</span>
-                  <span className="rounded bg-neutral-800 px-1.5 py-0.5">{v.category}</span>
-                  {v.mitre.map((m) => (
-                    <span key={m} className="rounded bg-neutral-800 px-1.5 py-0.5 font-mono">
-                      {m}
-                    </span>
-                  ))}
-                </div>
-              </li>
+              <VerdictCard key={`${v.event_id}-${i}`} verdict={v} sendCommand={sendCommand} />
             ))}
           </ul>
         )}

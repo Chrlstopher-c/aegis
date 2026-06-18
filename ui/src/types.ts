@@ -30,8 +30,17 @@ export interface EventEnvelope {
   payload: Record<string, unknown>;
 }
 
+// Action recommandée par le moteur, portée par le verdict. Enum Rust sérialisé
+// en externally-tagged : variante simple = chaîne, variante à champ = objet.
+export type Action =
+  | "Log"
+  | "Notify"
+  | { Quarantine: { path: string } }
+  | { Isolate: { pid: number } }
+  | { Kill: { pid: number } };
+
 export interface Verdict {
-  event_id: string;
+  event_id: number;
   engine: string;
   severity: Severity;
   category: ThreatCategory;
@@ -39,8 +48,22 @@ export interface Verdict {
   confidence: number;
   title: string;
   detail: string;
+  recommended_action: Action;
 }
 
 export type StreamMessage =
   | ({ type: "event" } & EventEnvelope)
   | ({ type: "verdict" } & Verdict);
+
+// Commandes UI → daemon (sous-ensemble câblé côté daemon). Enum Rust
+// externally-tagged : { Quarantine: { path } }, etc.
+export type Command =
+  | { Quarantine: { path: string } }
+  | { Restore: { quarantine_id: string } }
+  | { KillProcess: { pid: number } };
+
+export interface CommandResult {
+  ok: boolean;
+  error?: string;
+  data?: unknown;
+}

@@ -3,8 +3,8 @@
 //! événements et des verdicts plausibles sur le bus, sans toucher au système.
 
 use aegis_core::{
-    Engine, EventEnvelope, EventPayload, EventSource, FileEvent, FileOp, ProcessCtx, Severity,
-    StreamMessage, ThreatCategory, Verdict, SCHEMA_VERSION,
+    Action, Engine, EventEnvelope, EventPayload, EventSource, FileEvent, FileOp, ProcessCtx,
+    Severity, StreamMessage, ThreatCategory, Verdict, SCHEMA_VERSION,
 };
 use tokio::sync::broadcast;
 use tokio::time::{sleep, Duration};
@@ -65,12 +65,13 @@ fn make_event(pid: u32, comm: &str, path: &str) -> EventEnvelope {
 
 fn make_verdict(tick: u64) -> Verdict {
     let table = [
-        (Engine::Yara, Severity::High, ThreatCategory::Signature, "T1204", "Signature YARA : eicar_test_file", "Fichier de test EICAR détecté dans /tmp"),
-        (Engine::Ransomware, Severity::Critical, ThreatCategory::Impact, "T1486", "Canari modifié par crypter", "Chiffrement de masse détecté, process neutralisé"),
-        (Engine::Behavioral, Severity::Critical, ThreatCategory::CommandAndControl, "T1059.004", "Reverse shell probable (bash)", "Motif /dev/tcp/ dans la commande"),
-        (Engine::Behavioral, Severity::High, ThreatCategory::Execution, "T1059", "Exécution depuis une zone inscriptible (dropper)", "Binaire exécuté depuis /tmp/dropper"),
+        (Engine::Yara, Severity::High, ThreatCategory::Signature, "T1204", "Signature YARA : eicar_test_file", "Fichier de test EICAR détecté dans /tmp", Action::Quarantine { path: "/tmp/eicar.com".into() }),
+        (Engine::Ransomware, Severity::Critical, ThreatCategory::Impact, "T1486", "Canari modifié par crypter", "Chiffrement de masse détecté, process neutralisé", Action::Kill { pid: 4042 }),
+        (Engine::Behavioral, Severity::Critical, ThreatCategory::CommandAndControl, "T1059.004", "Reverse shell probable (bash)", "Motif /dev/tcp/ dans la commande", Action::Kill { pid: 1201 }),
+        (Engine::Behavioral, Severity::High, ThreatCategory::Execution, "T1059", "Exécution depuis une zone inscriptible (dropper)", "Binaire exécuté depuis /tmp/dropper", Action::Notify),
     ];
-    let (engine, severity, category, mitre, title, detail) = table[(tick as usize / 5) % table.len()];
+    let (engine, severity, category, mitre, title, detail, action) =
+        table[(tick as usize / 5) % table.len()].clone();
     Verdict {
         schema_version: SCHEMA_VERSION,
         event_id: u128::from(tick),
@@ -81,7 +82,7 @@ fn make_verdict(tick: u64) -> Verdict {
         confidence: 0.95,
         title: title.into(),
         detail: detail.into(),
-        recommended_action: aegis_core::Action::Notify,
+        recommended_action: action,
     }
 }
 
