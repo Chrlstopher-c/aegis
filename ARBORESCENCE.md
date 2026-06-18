@@ -60,9 +60,10 @@ aegis/
 │   └── clean-canaries.sh            # nettoyage des canaris résiduels dans le home
 ├── ui/src/                          # dashboard React (Lot 4)
 │   ├── App.tsx                      # layout dashboard (header + détections + flux)
-│   ├── types.ts                     # miroir TS du contrat IPC (StreamMessage)
-│   ├── useAegisStream.ts            # hook WebSocket (reconnexion, buffers bornés)
-│   └── components/                  # ProtectionHeader, VerdictList, EventFeed, severity
+│   ├── types.ts                     # miroir TS du contrat IPC (StreamMessage, Command, Action)
+│   ├── useAegisStream.ts            # hook WebSocket (flux + sendCommand corrélé, reconnexion)
+│   └── components/                  # ProtectionHeader, VerdictList, VerdictCard,
+│                                    #   EventFeed, eventAggregate, verdictActions, severity
 ├── rules/
 │   └── test.yar                     # règles EICAR + reverse-shell (convention meta)
 ├── tests/redteam/

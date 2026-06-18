@@ -2,10 +2,17 @@
 *Dernière mise à jour : 2026-06-18*
 
 ## 🎯 Prochaine session (priorité)
-- [ ] Débloquer fenêtre Tauri sous Wayland (`Gdk Error 71`) — tester `WEBKIT_DISABLE_DMABUF_RENDERER=1` (+ `GDK_BACKEND=x11`) ; sinon acter fallback navigateur
-- [ ] **Chantier eBPF** (Lot 3 tranche 3) : crate `aegis-probes-ebpf` (aya, nightly) — mmap W+X (fileless), capset/setuid (escalade), socket_connect (C2). Le plus gros morceau restant.
-- [ ] Dette canaris : `deploy_canaries` doit `chown` vers l'utilisateur réel (sinon canaris root dans le home en prod systemd)
-- [ ] Pousser le binaire release à jour dans le service : `sudo ./packaging/install.sh && sudo systemctl restart aegis`
+- [x] Débloquer fenêtre Tauri sous Wayland — `WEBKIT_DISABLE_DMABUF_RENDERER=1 bun run tauri dev` (validé)
+- [x] Dette canaris : `deploy` `chown` vers l'utilisateur réel (`SUDO_USER`) — fait
+- [x] UI : agrégation du flux temps réel (compteur ×N, anti-firehose) — validé E2E
+- [x] UI : actions par détection (quarantaine/kill) câblées daemon via WS — validé E2E
+- [ ] **Chantier eBPF** (Lot 3 tranche 3) — BLOQUÉ : outillage absent (ni rustup, ni nightly,
+      ni bpf-linker ; Rust = paquet Arch stable 1.96). Réinstaller rustup+nightly+rust-src+bpf-linker
+      avant d'attaquer. crate `aegis-probes-ebpf` (aya) : mmap W+X (fileless), capset/setuid, socket_connect (C2).
+- [ ] Pousser le binaire release à jour dans le service (intègre le fix chown canaris) :
+      `cargo build --release && sudo ./packaging/install.sh && sudo systemctl restart aegis`
+- [ ] Toggle mode Detection/Prevention dans l'UI — nécessite que le daemon pousse son mode courant
+      (ajout contrat : message de statut initial) sinon le toggle ment à la reconnexion
 
 ## Conception (session 2026-06-17 — terminée)
 - [x] Vision, cibles, stack, architecture, specs fondamentales (IPC, détection, policy)
@@ -56,7 +63,8 @@ réponse. Chaque phase a un livrable validé avant d'enchaîner.
 ### Phase 4 — UI temps réel
 - [x] Bridge WebSocket daemon ↔ UI (`ws_bridge.rs`, 127.0.0.1:8787, StreamMessage JSON)
 - [x] Dashboard React dark épuré : flux live, état protection, détections (sévérité/MITRE)
-- [ ] Contrôles UI→daemon : quarantaine/restauration, exclusions, kill, toggle détection ⇄ prévention (Lot 5)
+- [x] Contrôles UI→daemon : quarantaine + kill par détection (WS, `recommended_action`) — validé E2E
+- [ ] Contrôles UI restants : restauration, exclusions, toggle détection ⇄ prévention
 - [ ] Empaquetage Tauri (tray, notifications natives) (Lot 5)
 - [x] Livrable : dashboard live validé E2E (mode démo) — **rendu visuel à valider par Chris**
 - [x] Bonus : mode dégradé (daemon survit sans capteurs) + mode `--demo`
