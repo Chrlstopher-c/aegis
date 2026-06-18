@@ -58,13 +58,31 @@ compile. Pré-vol environnement passé sans bloquant majeur.
   **E2E root** (`tests/redteam/lot2-eicar-quarantine.sh`) : EICAR /tmp détecté +
   quarantiné en ~1 ms. `cargo build` + `clippy --workspace` clean.
 
-**Dette / reste à faire (post cible-session) :**
-- Sonde **eBPF exec** via aya (cgroup réel, caps près du `bprm_check`) — enrichissement.
-- Cache LRU des hash (éviter re-scans) — prévu plan, pas encore implémenté.
+**Lot 3 (Comportemental & anti-ransomware) — tranche 1/3 DONE et validée E2E :**
+- `aegis-response/kill.rs` : `SIGKILL` (nix, features signal+process), idempotent (ESRCH = succès).
+- `aegis-probes/canary.rs` : déploie des leurres (`0000_`/`zzzz_aegis_canary.*`, touchés
+  tôt quel que soit le sens de parcours) dans les dossiers données (`SUDO_USER` réel,
+  pas `/root`), configurable `AEGIS_CANARY_DIRS`.
+- Sonde fanotify étendue : marque `FAN_MODIFY` (inode) sur chaque canari, route les
+  événements par `event.mask()` (exec bloquant `FAN_OPEN_EXEC_PERM` vs canari notif).
+- `aegis-detection/behavioral.rs` : `CanaryWatch` — écriture sur canari → verdict
+  `Critical` / `Impact` / T1486 + `Action::Kill`.
+- Pipeline : comportemental **prioritaire** (évalué avant filtrage/scan), kill immédiat.
+- **Validé** : tests unitaires (canari kill, non-canari ignoré) + **E2E root**
+  (`tests/redteam/lot3-ransomware-kill.sh`) : faux ransomware sur 2000 fichiers →
+  neutralisé en 86 µs, 17/2000 chiffrées (0,85 %). `cargo build`+`clippy` clean.
+
+**Reste du Lot 3 (tranches 2-3) :** détection de **rafale + entropie** (généralise
+au-delà du canari : N écritures/renames/T s par pid), corrélation arbre de pid, et
+sondes **eBPF** (mmap W+X fileless, capset/setuid escalade, socket_connect C2) via
+crate eBPF aya nightly.
+
+**Autre dette :**
+- Sonde eBPF exec (cgroup réel, caps) — enrichissement du Lot 1.
+- Cache LRU des hash (éviter re-scans YARA) — prévu plan.
 - **Lot 4 (UI branchée)** : pont WebSocket daemon↔UI, dashboard flux live. L'UI est
-  encore une page dark non connectée. C'est le prochain gros morceau visible.
-- **Lot 3** : comportemental (eBPF mmap/capset/connect), corrélation, anti-ransomware.
-- Note : le store `/var/lib/aegis/quarantine` contient un EICAR de test (inoffensif).
+  encore une page dark non connectée — prochain gros morceau visible.
+- Note : `/var/lib/aegis/quarantine` contient un EICAR de test (inoffensif).
 
 **Conception produit complète** (pas seulement MVP), corpus dans `docs/` (index
 `docs/README.md`) :

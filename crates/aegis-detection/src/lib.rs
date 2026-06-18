@@ -2,8 +2,10 @@
 //! `Verdict`. Aucune action n'est appliquée ici (frontière `detection` → jamais
 //! `response`). YARA (Lot 2) ; comportemental et corrélation au Lot 3.
 
+mod behavioral;
 mod yara;
 
+pub use behavioral::CanaryWatch;
 pub use yara::{YaraEngine, YaraError};
 
 use aegis_core::{EventEnvelope, Verdict};

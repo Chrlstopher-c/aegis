@@ -8,7 +8,7 @@ mod scan;
 mod zones;
 
 use aegis_core::EventEnvelope;
-use aegis_detection::YaraEngine;
+use aegis_detection::{CanaryWatch, YaraEngine};
 use aegis_response::Quarantine;
 use anyhow::{Context, Result};
 use tokio::sync::{broadcast, mpsc};
@@ -43,11 +43,15 @@ async fn main() -> Result<()> {
         .context("ouverture du store de quarantaine")?;
     let scan_tx = scan::spawn(engine, quarantine);
 
+    // Anti-ransomware : déploiement des canaris + surveillance.
+    let canaries = aegis_probes::deploy_canaries(&aegis_probes::default_canary_zones());
+    let canary_watch = CanaryWatch::new(canaries.clone());
+
     // Capteurs → ingestion (mpsc), ingestion → clients socket (broadcast).
     let (event_tx, event_rx) = mpsc::unbounded_channel::<EventEnvelope>();
     let (bus_tx, _) = broadcast::channel::<EventEnvelope>(1024);
 
-    aegis_probes::spawn_fanotify(event_tx)?;
+    aegis_probes::spawn_fanotify(event_tx, &canaries)?;
 
     let socket_bus = bus_tx.clone();
     tokio::spawn(async move {
@@ -57,6 +61,6 @@ async fn main() -> Result<()> {
     });
 
     // Bloque jusqu'à fermeture du canal (capteurs morts).
-    pipeline::ingest(event_rx, bus_tx, scan_tx).await;
+    pipeline::ingest(event_rx, bus_tx, scan_tx, canary_watch).await;
     Ok(())
 }

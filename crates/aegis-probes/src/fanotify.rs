@@ -1,9 +1,11 @@
-//! Sonde fanotify : capte les exécutions (`FAN_OPEN_EXEC_PERM`) en temps réel
-//! sur les filesystems montés. Mode detection ⇒ réponse `FAN_ALLOW` immédiate
-//! (avant le timeout kernel, contrainte dure). Tourne sur un thread dédié car
-//! `read_events` est bloquant ; émet des `EventEnvelope` vers le daemon.
+//! Sonde fanotify : capte en temps réel les exécutions (`FAN_OPEN_EXEC_PERM`,
+//! événement bloquant) et les modifications de fichiers canari (`FAN_MODIFY`,
+//! notification). Mode detection ⇒ réponse `FAN_ALLOW` immédiate sur les events
+//! bloquants (avant le timeout kernel, contrainte dure). Tourne sur un thread
+//! dédié car `read_events` est bloquant ; émet des `EventEnvelope` vers le daemon.
 
 use std::os::fd::{AsRawFd, BorrowedFd};
+use std::path::PathBuf;
 use std::thread;
 
 use aegis_core::{
@@ -19,7 +21,7 @@ use ulid::Ulid;
 
 use crate::proc::process_ctx;
 
-/// Filesystems marqués. Couvre la racine + les tmpfs chauds (montages séparés).
+/// Filesystems marqués pour l'exécution. Racine + tmpfs chauds (montages séparés).
 const MARKED_MOUNTS: &[&str] = &["/", "/tmp", "/dev/shm"];
 
 /// Erreur d'initialisation d'une sonde.
@@ -31,22 +33,31 @@ pub enum ProbeError {
     Thread(#[source] std::io::Error),
 }
 
-/// Initialise fanotify, pose les marques d'exécution et lance la boucle de
-/// capture sur un thread dédié. Nécessite `CAP_SYS_ADMIN`.
-pub fn spawn(tx: UnboundedSender<EventEnvelope>) -> Result<(), ProbeError> {
+/// Initialise fanotify, pose les marques (exécution + canaris) et lance la boucle
+/// de capture sur un thread dédié. Nécessite `CAP_SYS_ADMIN`.
+pub fn spawn(tx: UnboundedSender<EventEnvelope>, canaries: &[PathBuf]) -> Result<(), ProbeError> {
     let fan = Fanotify::init(
         InitFlags::FAN_CLASS_CONTENT | InitFlags::FAN_CLOEXEC,
         EventFFlags::O_RDONLY,
     )
     .map_err(ProbeError::Init)?;
 
-    let mask = MaskFlags::FAN_OPEN_EXEC_PERM;
-    let flags = MarkFlags::FAN_MARK_ADD | MarkFlags::FAN_MARK_FILESYSTEM;
+    // Exécutions : marque filesystem, événement bloquant (perm).
+    let exec_flags = MarkFlags::FAN_MARK_ADD | MarkFlags::FAN_MARK_FILESYSTEM;
     for mount in MARKED_MOUNTS {
-        if let Err(err) = fan.mark(flags, mask, None, Some(*mount)) {
-            warn!(mount, %err, "marque fanotify ignorée");
+        if let Err(err) = fan.mark(exec_flags, MaskFlags::FAN_OPEN_EXEC_PERM, None, Some(*mount)) {
+            warn!(mount, %err, "marque fanotify exec ignorée");
         }
     }
+
+    // Canaris : marque inode par fichier, notification de modification.
+    let canary_flags = MarkFlags::FAN_MARK_ADD;
+    for canary in canaries {
+        if let Err(err) = fan.mark(canary_flags, MaskFlags::FAN_MODIFY, None, Some(canary)) {
+            warn!(path = %canary.display(), %err, "marque canari ignorée");
+        }
+    }
+    info!(canaries = canaries.len(), "marques canari posées");
 
     thread::Builder::new()
         .name("aegis-fanotify".into())
@@ -56,15 +67,15 @@ pub fn spawn(tx: UnboundedSender<EventEnvelope>) -> Result<(), ProbeError> {
 }
 
 fn run_loop(fan: Fanotify, tx: UnboundedSender<EventEnvelope>) {
-    info!(mounts = ?MARKED_MOUNTS, "sonde fanotify active (FAN_OPEN_EXEC_PERM)");
+    info!(mounts = ?MARKED_MOUNTS, "sonde fanotify active (exec + canaris)");
     loop {
         match fan.read_events() {
             // Phase 1 : acquitter tout le batch immédiatement (chemin bloquant,
             // sous timeout kernel). Phase 2 : enrichir hors du chemin critique.
             Ok(events) => {
                 let captured = acknowledge_batch(&fan, &events);
-                for (pid, path) in captured {
-                    let envelope = envelope_for(process_ctx(pid, &path), path);
+                for (pid, path, op) in captured {
+                    let envelope = envelope_for(process_ctx(pid, &path), path, op);
                     if tx.send(envelope).is_err() {
                         warn!("canal d'ingestion fermé, événement perdu");
                     }
@@ -75,21 +86,28 @@ fn run_loop(fan: Fanotify, tx: UnboundedSender<EventEnvelope>) {
     }
 }
 
-/// Répond `ALLOW` à chaque événement et retourne `(pid, path)` pour enrichissement.
-fn acknowledge_batch(fan: &Fanotify, events: &[FanotifyEvent]) -> Vec<(u32, String)> {
+/// Acquitte les événements bloquants et retourne `(pid, path, op)` à enrichir.
+/// Un `FAN_OPEN_EXEC_PERM` exige une réponse ; un `FAN_MODIFY` (canari) non.
+fn acknowledge_batch(fan: &Fanotify, events: &[FanotifyEvent]) -> Vec<(u32, String, FileOp)> {
     let mut captured = Vec::with_capacity(events.len());
     for event in events {
         let Some(fd) = event.fd() else { continue };
         let path = read_fd_path(fd);
-        if let Err(err) = fan.write_response(FanotifyResponse::new(fd, Response::FAN_ALLOW)) {
-            error!(%err, "réponse fanotify (ALLOW)");
+        let mask = event.mask();
+        if mask.contains(MaskFlags::FAN_OPEN_EXEC_PERM) {
+            if let Err(err) = fan.write_response(FanotifyResponse::new(fd, Response::FAN_ALLOW)) {
+                error!(%err, "réponse fanotify (ALLOW)");
+            }
+            captured.push((event.pid().max(0) as u32, path, FileOp::OpenExec));
+        } else if mask.contains(MaskFlags::FAN_MODIFY) {
+            captured.push((event.pid().max(0) as u32, path, FileOp::Write));
         }
-        captured.push((event.pid().max(0) as u32, path));
     }
     captured
 }
 
-fn envelope_for(process: ProcessCtx, path: String) -> EventEnvelope {
+fn envelope_for(process: ProcessCtx, path: String, op: FileOp) -> EventEnvelope {
+    let blocking = matches!(op, FileOp::OpenExec);
     EventEnvelope {
         schema_version: SCHEMA_VERSION,
         event_id: Ulid::new().0,
@@ -98,8 +116,8 @@ fn envelope_for(process: ProcessCtx, path: String) -> EventEnvelope {
         process,
         payload: EventPayload::File(FileEvent {
             path,
-            op: FileOp::OpenExec,
-            blocking: true,
+            op,
+            blocking,
             response_token: None,
         }),
     }

@@ -40,10 +40,12 @@ réponse. Chaque phase a un livrable validé avant d'enchaîner.
 - [ ] Cache LRU des hash (éviter re-scans) — prévu plan
 
 ### Phase 3 — Détection comportementale
-- [ ] Règles eBPF : escalade privilèges, reverse shell, persistance (cron/systemd/LD_PRELOAD)
-- [ ] Anti-ransomware : fichiers canari + détection rafale chiffrement/rename → kill in-kernel
-- [ ] Mapping MITRE ATT&CK sur chaque détection
-- [ ] Livrable : ransomware simulé tué avant propagation
+- [ ] Règles eBPF : escalade privilèges, reverse shell, persistance (cron/systemd/LD_PRELOAD) — tranche 3
+- [x] Anti-ransomware : fichiers canari (`FAN_MODIFY`) → kill (`SIGKILL`) — **validé E2E (86 µs, 0,85 % chiffré)**
+- [ ] Anti-ransomware : détection rafale + entropie (au-delà du canari) — tranche 2
+- [x] Mapping MITRE ATT&CK sur chaque détection (T1486 ransomware, T1204 EICAR)
+- [x] Livrable : ransomware simulé tué avant propagation — **validé**
+- [ ] Corrélation : arbre de pid + fenêtre temporelle — tranche 2
 
 ### Phase 4 — UI temps réel
 - [ ] Bridge WebSocket daemon ↔ UI

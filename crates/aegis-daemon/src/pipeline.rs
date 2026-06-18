@@ -5,35 +5,64 @@
 
 use std::sync::mpsc::Sender;
 
-use aegis_core::{EventEnvelope, EventPayload};
+use aegis_core::{Action, EventEnvelope, EventPayload, FileOp, Verdict};
+use aegis_detection::CanaryWatch;
 use tokio::sync::{broadcast, mpsc};
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 use crate::scan::ScanRequest;
 use crate::zones::is_hot_exec;
 
-/// Draine le canal capteurs jusqu'à sa fermeture. Les exécutions en zone chaude
-/// sont loggées, diffusées et envoyées au scanner ; le reste est ignoré (trace).
+/// Draine le canal capteurs jusqu'à sa fermeture. Priorité au comportemental
+/// (canari touché → kill immédiat) ; sinon, les exécutions en zone chaude sont
+/// loggées, diffusées et envoyées au scanner. Le reste est ignoré.
 pub async fn ingest(
     mut rx: mpsc::UnboundedReceiver<EventEnvelope>,
     bus: broadcast::Sender<EventEnvelope>,
     scan_tx: Sender<ScanRequest>,
+    canary_watch: CanaryWatch,
 ) {
     while let Some(event) = rx.recv().await {
+        // 1. Comportemental prioritaire : un canari modifié = ransomware certain.
+        if let Some(verdict) = canary_watch.evaluate(&event) {
+            enforce(&verdict);
+            let _ = bus.send(event);
+            continue;
+        }
+        // 2. Flux d'exécution filtré par zone → scan signatures.
         if !is_relevant(&event) {
             debug!(source = ?event.source, "événement non pertinent ignoré");
             continue;
         }
         log_event(&event);
         if let EventPayload::File(file) = &event.payload {
-            let _ = scan_tx.send(ScanRequest {
-                path: file.path.clone(),
-                event_id: event.event_id,
-            });
+            if matches!(file.op, FileOp::OpenExec) {
+                let _ = scan_tx.send(ScanRequest {
+                    path: file.path.clone(),
+                    event_id: event.event_id,
+                });
+            }
         }
         let _ = bus.send(event); // échoue seulement sans abonné : ignoré
     }
     info!("canal d'ingestion fermé, arrêt de la boucle");
+}
+
+/// Journalise un verdict comportemental et applique l'action recommandée.
+fn enforce(verdict: &Verdict) {
+    info!(
+        engine = ?verdict.engine,
+        severity = ?verdict.severity,
+        mitre = ?verdict.mitre,
+        title = %verdict.title,
+        "VERDICT"
+    );
+    if let Action::Kill { pid } = verdict.recommended_action {
+        match aegis_response::kill_process(pid) {
+            Ok(()) => info!(pid, "ransomware neutralisé"),
+            Err(err) => error!(pid, %err, "neutralisation impossible"),
+        }
+    }
 }
 
 /// Filtre le bruit : seules les exécutions issues d'une zone inscriptible passent.

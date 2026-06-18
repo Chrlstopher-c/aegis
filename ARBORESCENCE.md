@@ -21,26 +21,29 @@ aegis/
 │   ├── aegis-probes/                # capteurs bas niveau (fanotify)
 │   │   ├── Cargo.toml
 │   │   └── src/
-│   │       ├── lib.rs               # exports (spawn_fanotify)
-│   │       ├── fanotify.rs          # sonde FAN_OPEN_EXEC_PERM, acquittement batch
+│   │       ├── lib.rs               # exports (spawn_fanotify, canaris)
+│   │       ├── fanotify.rs          # sonde exec (PERM) + canaris (MODIFY), routage par mask
+│   │       ├── canary.rs            # déploiement leurres anti-ransomware
 │   │       └── proc.rs              # enrichissement ProcessCtx via /proc
 │   ├── aegis-detection/             # moteurs de verdict
 │   │   ├── Cargo.toml
 │   │   ├── src/
-│   │   │   ├── lib.rs               # trait DetectionEngine + exports YARA
-│   │   │   └── yara.rs              # YaraEngine (yara-x) : compile rules/, scan→Verdict
-│   │   └── tests/eicar.rs           # détection EICAR + fichier sain
+│   │   │   ├── lib.rs               # trait DetectionEngine + exports
+│   │   │   ├── yara.rs              # YaraEngine (yara-x) : compile rules/, scan→Verdict
+│   │   │   └── behavioral.rs        # CanaryWatch : écriture canari → verdict ransomware
+│   │   └── tests/                   # eicar.rs, canary.rs
 │   ├── aegis-response/              # application des actions
 │   │   ├── Cargo.toml
 │   │   ├── src/
-│   │   │   ├── lib.rs               # exports Quarantine
-│   │   │   └── quarantine.rs        # store quarantaine + restauration
+│   │   │   ├── lib.rs               # exports Quarantine, kill_process
+│   │   │   ├── quarantine.rs        # store quarantaine + restauration
+│   │   │   └── kill.rs              # neutralisation SIGKILL
 │   │   └── tests/quarantine.rs      # round-trip quarantine/restore
 │   └── aegis-daemon/                # orchestrateur (binaire tokio + tracing)
 │       ├── Cargo.toml
 │       └── src/
-│           ├── main.rs              # câblage pipeline + moteur YARA + quarantaine
-│           ├── pipeline.rs          # ingestion, filtrage zone, déclenchement scan
+│           ├── main.rs              # câblage pipeline + YARA + quarantaine + canaris
+│           ├── pipeline.rs          # ingestion, comportemental prioritaire, filtrage, scan
 │           ├── ipc_socket.rs        # socket Unix, diffusion JSON du flux
 │           ├── scan.rs              # thread scan YARA + quarantaine auto ≥ High
 │           └── zones.rs             # classification zone chaude/froide (anti-bruit)
@@ -48,7 +51,8 @@ aegis/
 │   └── test.yar                     # règles EICAR + reverse-shell (convention meta)
 ├── tests/redteam/
 │   ├── lot1-exec-flux.sh            # validation flux exec temps réel (root)
-│   └── lot2-eicar-quarantine.sh     # validation détection + quarantaine (root)
+│   ├── lot2-eicar-quarantine.sh     # validation détection + quarantaine (root)
+│   └── lot3-ransomware-kill.sh      # validation ransomware tué avant propagation (root)
 ├── ui/                              # Tauri v2 + React/TS/Tailwind v4 dark
 │   ├── vite.config.ts               # plugins react + tailwindcss
 │   └── src/
