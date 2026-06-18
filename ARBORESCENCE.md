@@ -56,7 +56,8 @@ aegis/
 │           └── zones.rs             # classification zone chaude/froide (anti-bruit)
 ├── packaging/
 │   ├── aegis.service                # unit systemd (capabilities minimales, durcissement)
-│   └── install.sh                   # installation service + binaire + règles (root)
+│   ├── install.sh                   # installation service + binaire + règles (root)
+│   └── install-ui.sh                # intégration OS du client AppImage (.desktop + autostart + icône, sans root)
 ├── scripts/
 │   └── clean-canaries.sh            # nettoyage des canaris résiduels dans le home
 ├── ui/src/                          # dashboard React (Lot 4)
@@ -64,6 +65,7 @@ aegis/
 │   ├── types.ts                     # miroir TS du contrat IPC (StreamMessage, Command, Action)
 │   ├── useAegisStream.ts            # hook WebSocket (flux + sendCommand corrélé, reconnexion)
 │   ├── usePersistentState.ts        # hook état persisté localStorage (préférences UI)
+│   ├── useTrayStatus.ts             # reflète statut protection dans l'icône tray (vert/rouge)
 │   └── components/                  # ProtectionHeader, VerdictList, VerdictCard,
 │                                    #   EventFeed, eventAggregate, verdictActions, severity
 ├── rules/

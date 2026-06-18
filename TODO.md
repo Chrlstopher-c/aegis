@@ -65,7 +65,10 @@ réponse. Chaque phase a un livrable validé avant d'enchaîner.
 - [x] Dashboard React dark épuré : flux live, état protection, détections (sévérité/MITRE)
 - [x] Contrôles UI→daemon : quarantaine + kill par détection (WS, `recommended_action`) — validé E2E
 - [ ] Contrôles UI restants : restauration, exclusions, toggle détection ⇄ prévention
-- [ ] Empaquetage Tauri (tray, notifications natives) (Lot 5)
+- [x] Empaquetage Tauri : AppImage + SysTray (bouclier, statut vert/rouge, clic→dashboard,
+      close-to-tray) + intégration OS (`install-ui.sh` : .desktop + autostart `--hidden` + icône hicolor).
+      Build : `bun run bundle` (NO_STRIP requis — strip de linuxdeploy trop vieux pour `.relr.dyn`)
+- [ ] Notifications natives (toasts sur détection critique) — reste de l'empaquetage
 - [x] Livrable : dashboard live validé E2E (mode démo) — **rendu visuel à valider par Chris**
 - [x] Bonus : mode dégradé (daemon survit sans capteurs) + mode `--demo`
 

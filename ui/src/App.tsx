@@ -1,10 +1,12 @@
 import { useAegisStream } from "./useAegisStream";
+import { useTrayStatus } from "./useTrayStatus";
 import { ProtectionHeader } from "./components/ProtectionHeader";
 import { VerdictList } from "./components/VerdictList";
 import { EventFeed } from "./components/EventFeed";
 
 function App() {
   const { status, events, verdicts, sendCommand } = useAegisStream();
+  useTrayStatus(status, verdicts.length);
 
   return (
     <main className="flex h-full flex-col bg-neutral-950 text-neutral-100">
