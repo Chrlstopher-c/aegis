@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="646" viewBox="0 0 1040 646" fill="none" role="img">
+  <rect width="1040" height="646" rx="16" fill="#0a0b0e" stroke="#20242c"/>
+  <rect x="30" y="24" width="980" height="226" rx="12" fill="#161b22" stroke="#2a313c"/>
+  <text x="46" y="46" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="11" letter-spacing="2.5" fill="#8b929c">DAEMON · SYSTEM-WIDE</text>
+  <path d="M49 67 h9 l5 5 v11 h-14 z" fill="none" stroke="#d8a35f" stroke-width="1.4"/>
+    <text x="76" y="79" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12.5" fill="#f4f1ea">/usr/local/bin/aegis-daemon</text>
+    <text x="500" y="79" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">the daemon, a 22 MB static release binary</text>
+  <path d="M49 97 h9 l5 5 v11 h-14 z" fill="none" stroke="#d8a35f" stroke-width="1.4"/>
+    <text x="76" y="109" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12.5" fill="#f4f1ea">/etc/systemd/system/aegis.service</text>
+    <text x="500" y="109" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">unit: four capabilities, RUST_LOG, rules directory</text>
+  <path d="M46 127 h7 l3 3 h10 v12 h-20 z" fill="none" stroke="#d8a35f" stroke-width="1.4"/>
+    <text x="76" y="139" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12.5" fill="#f4f1ea">/usr/share/aegis/rules/</text>
+    <text x="500" y="139" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">YARA rules (AEGIS_RULES_DIR)</text>
+  <path d="M46 157 h7 l3 3 h10 v12 h-20 z" fill="none" stroke="#d8a35f" stroke-width="1.4"/>
+    <text x="76" y="169" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12.5" fill="#f4f1ea">/var/lib/aegis/</text>
+    <text x="500" y="169" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">state and the quarantine store, with metadata per file</text>
+  <circle cx="56" cy="194" r="6" fill="none" stroke="#d8a35f" stroke-width="1.4"/><circle cx="56" cy="194" r="2" fill="#d8a35f"/>
+    <text x="76" y="199" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12.5" fill="#f4f1ea">/run/aegis/aegis.sock</text>
+    <text x="500" y="199" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">IPC socket as root; $XDG_RUNTIME_DIR/aegis.sock otherwise</text>
+  <path d="M48 220 h16 M48 225 h16 M48 230 h10" stroke="#d8a35f" stroke-width="1.6" stroke-linecap="round"/>
+    <text x="76" y="229" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12.5" fill="#f4f1ea">127.0.0.1:8787</text>
+    <text x="500" y="229" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">WebSocket bridge for the dashboard (AEGIS_WS_ADDR)</text>
+  <rect x="30" y="268" width="980" height="106" rx="12" fill="#161b22" stroke="#2a313c"/>
+  <text x="46" y="290" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="11" letter-spacing="2.5" fill="#8b929c">LOGS</text>
+  <path d="M48 311 h14 v16 h-14 z M51 316 h8 M51 320 h8 M51 324 h5" fill="none" stroke="#d8a35f" stroke-width="1.4"/>
+    <text x="76" y="323" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12.5" fill="#f4f1ea">journalctl -u aegis</text>
+    <text x="500" y="323" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">everything the daemon says, RUST_LOG=info by default</text>
+  <path d="M48 341 h14 v16 h-14 z M51 346 h8 M51 350 h8 M51 354 h5" fill="none" stroke="#d8a35f" stroke-width="1.4"/>
+    <text x="76" y="353" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12.5" fill="#f4f1ea">logs/</text>
+    <text x="500" y="353" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">development runs through scripts/start.sh, reset at each start</text>
+  <rect x="30" y="392" width="980" height="106" rx="12" fill="#161b22" stroke="#2a313c"/>
+  <text x="46" y="414" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="11" letter-spacing="2.5" fill="#8b929c">DASHBOARD · PER USER</text>
+  <path d="M49 435 h9 l5 5 v11 h-14 z" fill="none" stroke="#d8a35f" stroke-width="1.4"/>
+    <text x="76" y="447" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12.5" fill="#f4f1ea">~/.local/bin/Aegis.AppImage</text>
+    <text x="500" y="447" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">the UI</text>
+  <path d="M49 465 h9 l5 5 v11 h-14 z" fill="none" stroke="#d8a35f" stroke-width="1.4"/>
+    <text x="76" y="477" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12.5" fill="#f4f1ea">~/.local/share/applications/agency.echo.aegis.desktop</text>
+    <text x="500" y="477" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">launcher; a copy in ~/.config/autostart starts it at login</text>
+  <rect x="30" y="516" width="980" height="106" rx="12" fill="#161b22" stroke="#2a313c"/>
+  <text x="46" y="538" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="11" letter-spacing="2.5" fill="#8b929c">TUNING · ENVIRONMENT OF THE UNIT</text>
+  <path d="M49 559 h9 l5 5 v11 h-14 z" fill="none" stroke="#d8a35f" stroke-width="1.4"/>
+    <text x="76" y="571" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12.5" fill="#f4f1ea">AEGIS_CANARY_DIRS</text>
+    <text x="500" y="571" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">directories where canary files are planted</text>
+  <path d="M49 589 h9 l5 5 v11 h-14 z" fill="none" stroke="#d8a35f" stroke-width="1.4"/>
+    <text x="76" y="601" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12.5" fill="#f4f1ea">AEGIS_SENSITIVE_FILES</text>
+    <text x="500" y="601" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">files watched for reads, /etc/shadow and /etc/gshadow by default</text>
+</svg>

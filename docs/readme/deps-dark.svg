@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="232" viewBox="0 0 1040 232" fill="none" role="img">
+  <rect width="1040" height="232" rx="16" fill="#0a0b0e" stroke="#20242c"/>
+  <text x="30" y="36" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12" letter-spacing="2.5" fill="#8b929c">WHAT IT STANDS ON</text>
+  <rect x="30" y="56" width="230" height="152" rx="12" fill="#161b22" stroke="#2a313c"/>
+  <text x="48" y="106" font-family="Georgia,'Times New Roman',serif" font-size="38" font-weight="600" fill="#f4f1ea">yara-x<tspan font-size="16" fill="#8b929c"> 0.11</tspan></text>
+  <text x="48" y="132" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="13" fill="#c3cad3">signature engine, pure Rust</text>
+  <text x="48" y="172" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="10.5" fill="#8b929c">embeds wasmtime, so the unit</text><text x="48" y="187" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="10.5" fill="#8b929c">allows W+X memory</text>
+  <rect x="280" y="56" width="230" height="152" rx="12" fill="#161b22" stroke="#2a313c"/>
+  <text x="298" y="106" font-family="Georgia,'Times New Roman',serif" font-size="38" font-weight="600" fill="#f4f1ea">nix<tspan font-size="16" fill="#8b929c"> 0.29</tspan></text>
+  <text x="298" y="132" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="13" fill="#c3cad3">fanotify, signals, processes</text>
+  <text x="298" y="172" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="10.5" fill="#8b929c">the kernel side of the probes</text>
+  <rect x="530" y="56" width="230" height="152" rx="12" fill="#161b22" stroke="#2a313c"/>
+  <text x="548" y="106" font-family="Georgia,'Times New Roman',serif" font-size="38" font-weight="600" fill="#f4f1ea">tokio<tspan font-size="16" fill="#8b929c"> 1</tspan></text>
+  <text x="548" y="132" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="13" fill="#c3cad3">async runtime of the daemon</text>
+  <text x="548" y="172" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="10.5" fill="#8b929c">322 crates in Cargo.lock in</text><text x="548" y="187" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="10.5" fill="#8b929c">total</text>
+  <rect x="780" y="56" width="230" height="152" rx="12" fill="#161b22" stroke="#2a313c"/>
+  <text x="798" y="106" font-family="Georgia,'Times New Roman',serif" font-size="30" font-weight="600" fill="#f4f1ea">Tauri 2</text>
+  <text x="798" y="132" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="13" fill="#c3cad3">dashboard shell around React 19</text>
+  <text x="798" y="172" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="10.5" fill="#8b929c">AppImage of 95 MB, 139 MB of</text><text x="798" y="187" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="10.5" fill="#8b929c">node_modules for dev</text>
+</svg>
